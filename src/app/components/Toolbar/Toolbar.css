@@ -23,9 +23,9 @@
 
 @keyframes flash-green {
     0% {
-        color: green;
+        color: #34D399;
     }
     100% {
-        color: initial;
+        color: #9CA3AF;
     }
 }

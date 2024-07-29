@@ -1,5 +1,6 @@
 import { useSpeech } from "../../lib/context/speech.context.tsx";
 import { useEffect } from "react";
+import { Button } from "../../components/Button.tsx";
 
 export default function HomePage() {
   const { updatePageScript } = useSpeech();
@@ -17,12 +18,20 @@ export default function HomePage() {
       {
         text: 'Speech recognition can improve experience for a range of disabilities including: mobility disabilities like arthritis, temporary disabilities slash injuries, situational disabilities like holding a baby or even when you are multi tasking, for example cooking a meal.',
         focussedDiv: 'third'
+      },
+      {
+        text: 'Click the go accessible button or say go accessible to change to a more accessible colourway',
+        focussedDiv: 'go-accessible-div',
+        targetPhrase: {
+          phrase: 'go accessible',
+          buttonToClickId: 'accessible-button'
+        }
       }
     ]);
   }, []);
   
   return (
-    <div className={'bg-black text-white h-[100vh] w-full flex flex-col items-center'}>
+    <div id={'container'} className={'bg-gray-500 text-white h-[100vh] w-full flex flex-col items-center'}>
       <div className={'w-[40%] flex flex-col items-center text-center'}>
         <h1 id={'first'} className={'py-10 text-4xl font-black'}>
           ATOMIC MEDIA: UX FOR EVERYONE
@@ -34,6 +43,9 @@ export default function HomePage() {
           Speech recognition can improve experience for a range of disabilities including: mobility disabilities like
           arthritis, temporary disabilities/injuries, situational disabilities like holding a baby, or even when you are
           multi tasking, e.g. cooking a meal.
+        </div>
+        <div id={'go-accessible-div'}>
+          <Button id={'accessible-button'} variant={'light'}>Go Accessible</Button>
         </div>
       </div>
     </div>

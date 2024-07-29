@@ -5,6 +5,7 @@ import { faEarListen } from "@fortawesome/free-solid-svg-icons/faEarListen";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "./Toolbar.css";
 import { Button } from "../Button.tsx";
+import { Form } from "react-router-dom";
 
 export interface ToolbarProps {
   speaking: boolean;
@@ -15,6 +16,7 @@ export interface ToolbarProps {
 export default function Toolbar({ visible, script }: ToolbarProps ) {
   const [speaking, setSpeaking] = useState<boolean>(false);
   const [targetWordDetected, setTargetWordDetected] = useState<string>(null);
+  const [targetWord, setTargetWord] = useState<string | null>(null);
   const { readText, highlightFocussedDiv, removeHighlightOnDiv } = useSpeech();
   const { recognisedSpeech, startListening, stopListening, updateRecognisedSpeech, isListening, hasRecognitionSupport } = useSpeechRecognition();
 
@@ -30,6 +32,12 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
 
   useEffect(() => {
     const formatRecognisedSpeech = recognisedSpeech.trim().toLowerCase();
+    if (targetWord && formatRecognisedSpeech.includes(targetWord)) {
+      setTargetWordDetected(targetWord);
+      const container = document.getElementById('container');
+      container.style.backgroundColor = 'black';
+      container.style.color = 'white';
+    }
     if (formatRecognisedSpeech.includes('next')) {
       onTargetWordDetected('next');
       handleNextClick();
@@ -39,7 +47,7 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
       onTargetWordDetected('next');
       handleCancelSpeech();
     }
-  }, [recognisedSpeech]);
+  }, [recognisedSpeech, targetWord]);
   
   async function onReadScript(scriptArray: ScriptObject[] | null) {
     if (!scriptArray) {
@@ -57,16 +65,21 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
     setSpeaking(false);
   }
   
-  function readScriptOut(scriptObject: ScriptObject) {
+  async function readScriptOut(scriptObject: ScriptObject) {
     
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       readText(scriptObject.text, {
         onSpeechEnd: () => {
           cleanup();
           if (scriptObject.focussedDiv) {
             removeHighlightOnDiv(scriptObject.focussedDiv) 
           }
-          resolve();
+          if (!scriptObject.targetPhrase) {
+            resolve(); 
+          } else {
+            startListening();
+            setTargetWord(scriptObject.targetPhrase.phrase);
+          }
         }
       });
 
@@ -104,6 +117,7 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   
   function handleCancelSpeech() {
     window.speechSynthesis.cancel();
+    stopListening();
     setSpeaking(false);
     
     const event = new Event('cancelClicked');
@@ -122,21 +136,32 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
     <div className={`${!visible && 'hidden'} sticky bottom-0 z-[910] w-full text-black`}>
       {isListening && (
         <div className={`bg-white border-b border-b-solid border-b-black py-4 flex items-center justify-center`}>
-          {recognisedSpeech ? <div>{recognisedSpeech}</div> :
-            <div className={'text-gray-400 font-bold'}>Listening...</div>}
-        </div>
-      )}
-      <div className={'bg-white flex justify-center items-center'}>
-        <div className={`bg-white py-4 w-full sm:w-[90%] lg:w-[80%] grid grid-cols-3 gap-4`}>
-          {!isListening ? (
-            <div className={'h-full flex items-center'}>
-              <Button onClick={startListening} className={'p-4 bg-black rounded-2xl text-white'}>Use Speech Recognition</Button>
+          <div className={'w-[70%] grid grid-cols-2 gap-12'}>
+            
+            {targetWord && (
+              <div className={'flex justify-center'}>
+                <div className={'text-gray-400 font-bold'}>Listening for: <span
+                  className={`${targetWordDetected === targetWord && 'flash-green'}`}>{targetWord}</span></div>
+              </div>
+            )}
+            <div className={'flex justify-center'}>
+              <div className={'text-gray-400 font-bold'}>Response: <span
+                className={`${targetWordDetected === targetWord && 'flash-green'}`}>{recognisedSpeech ? recognisedSpeech : '...'}</span>
+              </div>
             </div>
+            </div>
+          </div>
+          )}
+
+          <div className={'bg-white flex justify-center items-center'}>
+            <div className={`bg-white py-4 w-full sm:w-[90%] lg:w-[80%] grid grid-cols-3 gap-4`}>
+              {!isListening ? (
+            <div></div>
           ) : (
-            <div className={'h-full flex items-center'}>
+            <div onMouseDown={startListening} onMouseUp={stopListening} className={'h-full flex items-center cursor-pointer'}>
               <div className={'h-[50px] w-[50px] relative inline-flex items-center justify-center'}>
                 <FontAwesomeIcon icon={faEarListen} size={'xl'}/>
-                <div className={'spinner'}/>
+                <div className={`${isListening ? '' : 'hidden'} spinner`}/>
               </div>
             </div>
           )}

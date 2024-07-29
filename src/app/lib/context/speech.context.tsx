@@ -22,6 +22,10 @@ export type ScriptObject = {
   text: string;
   textId?: number;
   focussedDiv?: string;
+  targetPhrase?: { 
+    phrase: string,
+    buttonToClickId?: string,
+  }
 };
 
 const speechContextIsNotInitialised = () => {
@@ -47,7 +51,7 @@ export function SpeechProvider({ children }) {
     borderWidth: '2px',
     borderStyle: 'solid',
     borderColor: '#FBBF24',
-    padding: '10px',
+    padding: '20px',
     borderRadius: '0.125rem',
     zIndex: '900'
   });
@@ -91,7 +95,7 @@ export function SpeechProvider({ children }) {
     utterance.voice = voice ? voice : initialisedVoice;
     utterance.pitch = 1;
     utterance.rate = 1.1;
-    utterance.volume = 0.9;
+    utterance.volume = 1;
 
     utterance.onstart = () => {
       if (speechState?.onSpeechStart) speechState.onSpeechStart();

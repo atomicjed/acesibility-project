@@ -14,6 +14,7 @@ export interface ToolbarProps {
 
 export default function Toolbar({ visible, script }: ToolbarProps ) {
   const [speaking, setSpeaking] = useState<boolean>(false);
+  const [targetWordDetected, setTargetWordDetected] = useState<string>(null);
   const { readText, highlightFocussedDiv, removeHighlightOnDiv } = useSpeech();
   const { recognisedSpeech, startListening, stopListening, updateRecognisedSpeech, isListening, hasRecognitionSupport } = useSpeechRecognition();
 
@@ -28,13 +29,14 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   }, [script]);
 
   useEffect(() => {
-    console.log('Recognised word:', recognisedSpeech);
     const formatRecognisedSpeech = recognisedSpeech.trim().toLowerCase();
-    if (formatRecognisedSpeech === 'next') {
+    if (formatRecognisedSpeech.includes('next')) {
+      onTargetWordDetected('next');
       handleNextClick();
     }
 
-    if (formatRecognisedSpeech === 'cancel') {
+    if (formatRecognisedSpeech.includes('cancel')) {
+      onTargetWordDetected('next');
       handleCancelSpeech();
     }
   }, [recognisedSpeech]);
@@ -96,6 +98,7 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   
   function handleNextClick() {
     const event = new Event('nextClicked');
+    onTargetWordDetected('next');
     window.dispatchEvent(event);
   }
   
@@ -107,6 +110,14 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
     window.dispatchEvent(event);
   }
   
+  function onTargetWordDetected(word: string) {
+    setTargetWordDetected(word);
+    
+    setTimeout(() => {
+      setTargetWordDetected(null);
+    }, 1000);
+  }
+  
   return (
     <div className={`${!visible && 'hidden'} sticky bottom-0 z-[910] w-full text-black`}>
       {isListening && (
@@ -116,7 +127,7 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
         </div>
       )}
       <div className={'bg-white flex justify-center items-center'}>
-        <div className={`bg-white py-8 w-full sm:w-[90%] lg:w-[80%] grid grid-cols-3 gap-4`}>
+        <div className={`bg-white py-4 w-full sm:w-[90%] lg:w-[80%] grid grid-cols-3 gap-4`}>
           {!isListening ? (
             <div className={'h-full flex items-center'}>
               <Button onClick={startListening} className={'p-4 bg-black rounded-2xl text-white'}>Use Speech Recognition</Button>
@@ -132,14 +143,14 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
 
           {speaking ? (
             <div className={'flex items-center justify-center gap-6'}>
-              <div className={'mt-8 flex flex-col gap-2 items-center'}>
+              <div className={`${isListening && 'mt-8'} flex flex-col gap-2 items-center`}>
                 <button onClick={handleCancelSpeech} className={'p-2 border-black border-solid border rounded-2xl'}>Cancel</button>
-                <div className={'text-sm text-gray-400 font-bold'}>Or say "cancel"</div>
+                { isListening && <div className={`${targetWordDetected === 'cancel' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or say "cancel"</div> }
               </div>
               <div>Speaking...</div>
-              <div className={'mt-8 flex flex-col gap-2 items-center'}>
+              <div className={`${isListening && 'mt-8'} flex flex-col gap-2 items-center`}>
                 <button onClick={handleNextClick} className={'p-2 border-black border-solid border rounded-2xl'}>Next</button>
-                <div className={'text-sm text-gray-400 font-bold'}>Or say "next"</div>
+                { isListening && <div className={`${targetWordDetected === 'next' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or say "next"</div> }
               </div>
             </div>
           ) : (

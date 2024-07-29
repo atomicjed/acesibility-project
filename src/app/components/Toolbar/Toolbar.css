@@ -16,3 +16,16 @@
         transform: rotate(360deg);
     }
 }
+
+.flash-green {
+    animation: flash-green 1s ease-in-out;
+}
+
+@keyframes flash-green {
+    0% {
+        color: green;
+    }
+    100% {
+        color: initial;
+    }
+}

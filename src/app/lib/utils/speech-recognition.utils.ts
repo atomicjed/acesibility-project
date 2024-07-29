@@ -32,6 +32,9 @@ function useSpeechRecognition() {
       };
 
       recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
+        if (event.error === 'no-speech') {
+          return;
+        }
         console.error("Speech recognition error:", event.error);
         setSpeechRecognitionError(`A speech recognition error occured: ${event.error}`);
         stopListening(); 

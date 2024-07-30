@@ -17,6 +17,7 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   const [speaking, setSpeaking] = useState<boolean>(false);
   const [targetWordDetected, setTargetWordDetected] = useState<string>(null);
   const [targetWord, setTargetWord] = useState<string | null>(null);
+  const [buttonId, setButtonId] = useState<string | null>(null);
   const { readText, highlightFocussedDiv, removeHighlightOnDiv } = useSpeech();
   const { recognisedSpeech, startListening, stopListening, updateRecognisedSpeech, isListening, hasRecognitionSupport } = useSpeechRecognition();
 
@@ -34,9 +35,11 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
     const formatRecognisedSpeech = recognisedSpeech.trim().toLowerCase();
     if (targetWord && formatRecognisedSpeech.includes(targetWord)) {
       setTargetWordDetected(targetWord);
-      const container = document.getElementById('container');
-      container.style.backgroundColor = 'black';
-      container.style.color = 'white';
+      
+      if (buttonId) {
+        const button = document.getElementById(buttonId);
+        button.click(); 
+      }
     }
     if (formatRecognisedSpeech.includes('next')) {
       onTargetWordDetected('next');
@@ -79,6 +82,9 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
           } else {
             startListening();
             setTargetWord(scriptObject.targetPhrase.phrase);
+            if (scriptObject.targetPhrase.buttonToClickId) {
+              setButtonId(scriptObject.targetPhrase.buttonToClickId);
+            }
           }
         }
       });

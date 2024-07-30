@@ -20,7 +20,7 @@ export default function HomePage() {
         focussedDiv: 'third'
       },
       {
-        text: 'Click the go accessible button or say go accessible to change to a more accessible colourway',
+        text: 'Click the go accessible button; or say go accessible; to change to a more accessible colourway',
         focussedDiv: 'go-accessible-div',
         targetPhrase: {
           phrase: 'go accessible',
@@ -29,6 +29,12 @@ export default function HomePage() {
       }
     ]);
   }, []);
+  
+  function changeColourway() {
+    const container = document.getElementById('container');
+    container.style.backgroundColor = 'black';
+    container.style.color = 'white';
+  }
   
   return (
     <div id={'container'} className={'bg-gray-500 text-white h-[100vh] w-full flex flex-col items-center'}>
@@ -45,7 +51,7 @@ export default function HomePage() {
           multi tasking, e.g. cooking a meal.
         </div>
         <div id={'go-accessible-div'}>
-          <Button id={'accessible-button'} variant={'light'}>Go Accessible</Button>
+          <button id={'accessible-button'} onClick={changeColourway} className={'p-4 rounded-2xl bg-white text-black'}>Go Accessible</button>
         </div>
       </div>
     </div>

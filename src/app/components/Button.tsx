@@ -1,7 +1,15 @@
-import { Children } from "react";
+import {ButtonHTMLAttributes, ReactNode} from "react";
 
-export function Button({ onClick, onMouseUp, onMouseDown, onTouchStart, onTouchEnd, children, variant }) {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'light' | 'dark';
+  children?: ReactNode; 
+}
+
+export function Button({ variant, children, ...props }: ButtonProps) {
   return (
-    <button onClick={onClick} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className={`p-4 rounded-2xl ${variant === 'light' ? 'bg-white text-black' : 'bg-black text-white'}`}>{children}</button>
+    <button 
+        className={`p-4 rounded-2xl ${variant === 'light' ? 'bg-white text-black' : 'bg-black text-white'}`}
+        {...props}
+    >{children}</button>
   )
 }

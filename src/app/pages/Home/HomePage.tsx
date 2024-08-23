@@ -1,8 +1,8 @@
 import { useSpeech } from "../../lib/context/speech.context.tsx";
-import { useEffect } from "react";
-import { Button } from "../../components/Button.tsx";
+import {useEffect, useState} from "react";
 
 export default function HomePage() {
+  const [isAccessibleColourway, setIsAccessibleColourway] = useState<boolean>(false);
   const { updatePageScript } = useSpeech();
 
   useEffect(() => {
@@ -16,29 +16,31 @@ export default function HomePage() {
         focussedDiv: 'second'
       },
       {
-        text: 'Speech recognition can improve experience for a range of disabilities including: mobility disabilities like arthritis, temporary disabilities slash injuries, situational disabilities like holding a baby or even when you are multi tasking, for example cooking a meal.',
+        text: 'Speech recognition can improve experience for a range of disabilities including: mobility disabilities like arthritis, temporary disabilities slash injuries, situational disabilities like holding a baby, or even when you are multi tasking, for example cooking a meal.',
         focussedDiv: 'third'
       },
       {
-        text: 'Click the go accessible button; or say go accessible; to change to a more accessible colourway',
+        text: 'Click the change background button; or say change background; to change to a more accessible colourway',
         focussedDiv: 'go-accessible-div',
         targetPhrase: {
-          phrase: 'go accessible',
+          phrase: 'change background',
           buttonToClickId: 'accessible-button'
         }
+      },
+      {
+        text: 'At Atomic Media, we out care the competition by delivering products that make a difference!',
+        focussedDiv: 'fourth'
       }
     ]);
   }, []);
   
-  function changeColourway() {
-    const container = document.getElementById('container');
-    container.style.backgroundColor = 'black';
-    container.style.color = 'white';
+  function changeBackground() {
+    setIsAccessibleColourway(true);
   }
   
   return (
-    <div id={'container'} className={'bg-gray-500 text-white h-[100vh] w-full flex flex-col items-center'}>
-      <div className={'w-[40%] flex flex-col items-center text-center'}>
+    <div id={'container'} className={`${isAccessibleColourway ? 'bg-black' : 'bg-gray-500'} text-white h-[100vh] w-full flex flex-col items-center`}>
+      <div className={'w-[90%] lg:w-[40%] flex flex-col items-center text-center'}>
         <h1 id={'first'} className={'py-10 text-4xl font-black'}>
           ATOMIC MEDIA: UX FOR EVERYONE
         </h1>
@@ -51,7 +53,12 @@ export default function HomePage() {
           multi tasking, e.g. cooking a meal.
         </div>
         <div id={'go-accessible-div'}>
-          <button id={'accessible-button'} onClick={changeColourway} className={'p-4 rounded-2xl bg-white text-black'}>Go Accessible</button>
+          <button id={'accessible-button'} onClick={changeBackground}
+                  className={'p-4 rounded-2xl bg-white text-black'}>Change Background
+          </button>
+        </div>
+        <div id={'fourth'} className={'py-10'}>
+          At Atomic Media, we out care the competition by delivering products that make a difference!
         </div>
       </div>
     </div>

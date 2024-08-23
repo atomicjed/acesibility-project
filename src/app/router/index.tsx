@@ -1,11 +1,15 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import HomePage from "../pages/Home/HomePage.tsx";
-import Toolbar from "../components/Toolbar/Toolbar.component.tsx";
+import FormPage from "../pages/FormPage/FormPage.tsx";
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <HomePage/>,
+  },
+  {
+    path: '/form-page',
+    element: <FormPage />,
   },
 ]);
 

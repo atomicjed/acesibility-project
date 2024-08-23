@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {createContext, ReactNode, useContext, useEffect, useState} from 'react';
 import Toolbar from "../../components/Toolbar/Toolbar.component.tsx";
-import useSpeechRecognition from "../utils/speech-recognition.utils.ts";
 import Navbar from "../../components/Layout/Navbar.tsx";
+import {ScriptProvider} from "./script.context.tsx";
+import {SpeechRecognitionProvider} from "./speech-recognition.context.tsx";
 
 type SpeechContextType = {
   readText: (text: string, speechState?: SpeechState) => void;
@@ -28,6 +29,10 @@ export type ScriptObject = {
   }
 };
 
+interface SpeechProviderProps {
+  children: ReactNode
+}
+
 const speechContextIsNotInitialised = () => {
   console.warn('SpeechContext is not initialised');
 };
@@ -41,8 +46,8 @@ const SpeechContext = createContext<SpeechContextType>({
   toggleToolbar: speechContextIsNotInitialised,
 });
 
-export function SpeechProvider({ children }) {
-  const [voice, setVoice] = useState(null);
+export function SpeechProvider({ children }: SpeechProviderProps) {
+  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [pageScript, setPageScript] = useState<ScriptObject[] | null>(null);
   const [toolbarIsVisible, setToolbarIsVisible] = useState<boolean>(false);
   const [focussedDivStyles, setFocussedDivStyles] = useState<React.CSSProperties>({
@@ -55,7 +60,6 @@ export function SpeechProvider({ children }) {
     borderRadius: '0.125rem',
     zIndex: '900'
   });
-  const { recognisedSpeech, startListening, stopListening, isListening, hasRecognitionSupport } = useSpeechRecognition();
 
   useEffect(() => {
     initializeSpeechSynthesis();
@@ -64,7 +68,7 @@ export function SpeechProvider({ children }) {
   function initializeSpeechSynthesis() {
     if ('speechSynthesis' in window) {
       const synthesis = window.speechSynthesis;
-      let voice;
+      let voice = null;
 
       const setVoices = () => {
         const voices = synthesis.getVoices();
@@ -78,20 +82,17 @@ export function SpeechProvider({ children }) {
       return voice;
     } else {
       console.error('Text-to-speech not supported.');
+      return null;
     }
-  }
-  
-  function callNextReadText(readTextId: string) {
-    
   }
 
   function readText(text: string, speechState?: SpeechState) {
-    let initialisedVoice;
+    let initialisedVoice = null;
     if (!voice) {
       initialisedVoice = initializeSpeechSynthesis();
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance: SpeechSynthesisUtterance = new SpeechSynthesisUtterance(text);
     utterance.voice = voice ? voice : initialisedVoice;
     utterance.pitch = 1;
     utterance.rate = 1.1;
@@ -159,7 +160,11 @@ export function SpeechProvider({ children }) {
     <SpeechContext.Provider value={{readText, updatePageScript, highlightFocussedDiv, removeHighlightOnDiv, updateHighlightedDivStyling, toggleToolbar}}>
       <Navbar toolbarIsVisible={toolbarIsVisible} />
       {children}
-      <Toolbar speaking={window.speechSynthesis.speaking} script={pageScript} visible={toolbarIsVisible} text={'This is a script.'} />
+      <SpeechRecognitionProvider>
+        <ScriptProvider>
+          <Toolbar speaking={window.speechSynthesis.speaking} script={pageScript} visible={toolbarIsVisible} />
+        </ScriptProvider>
+      </SpeechRecognitionProvider>
     </SpeechContext.Provider>
   );
 }

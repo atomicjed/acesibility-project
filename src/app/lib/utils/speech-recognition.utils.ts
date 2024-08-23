@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 let recognition: any = null;
 
@@ -10,7 +10,7 @@ if ("webkitSpeechRecognition" in window) {
   console.log("Browser doesn't support speech recognition");
 }
 
-function useSpeechRecognition() {
+export default function useSpeechRecognition() {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [recognisedSpeech, setRecognisedSpeech] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -57,6 +57,7 @@ function useSpeechRecognition() {
   }
   
   function stopListening() {
+    console.log()
     setIsListening(false);
     recognition?.stop();
   }
@@ -74,5 +75,3 @@ function useSpeechRecognition() {
     hasRecognitionSupport: !!recognition
   }
 }
-
-export default useSpeechRecognition;

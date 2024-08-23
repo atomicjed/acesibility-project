@@ -71,6 +71,7 @@ export default function useSpeechRecognition() {
     isListening,
     startListening,
     stopListening,
+    speechRecognitionError,
     updateRecognisedSpeech,
     hasRecognitionSupport: !!recognition
   }

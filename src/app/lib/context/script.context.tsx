@@ -1,15 +1,18 @@
 import {createContext, ReactNode, useContext, useState} from "react";
-import {ScriptObject, useSpeech} from "./speech.context.tsx";
+import {useSpeech} from "./speech.context.tsx";
 import {useSpeechRecognitionContext} from "./speech-recognition.context.tsx";
+import {ScriptObject} from "../types/script-object.types.ts";
+import {handleSpeechPromptedAction} from "../utils/action.utils.ts";
 
 type ReadScriptContextType = {
   handleReadScript: (scriptArray: ScriptObject[] | null) => Promise<void>;
-  handleRecognisedSpeech: () => void;
+  handleRecognisedSpeech: (scriptObject: ScriptObject) => void;
   handleNextClick: () => void;
   handleCancelSpeech: () => void;
   targetWord: string | null;
   targetWordDetected: string | null;
   speaking: boolean;
+  currentScriptObject: ScriptObject | null;
 }
 
 interface ScriptProviderProps {
@@ -21,35 +24,44 @@ const ReadScriptContext = createContext<ReadScriptContextType>({
     console.log("Default handleReadScript called", scriptArray);
     return Promise.resolve();
   },
-  handleRecognisedSpeech: () => {},
+  handleRecognisedSpeech: (scriptObject: ScriptObject) => {
+    console.log('Uninitialised handleRecognisedSpeech function', scriptObject);
+  },
   handleNextClick: () => {},
   handleCancelSpeech: () => {},
   targetWord: null,
   targetWordDetected: null,
-  speaking: false
+  speaking: false,
+  currentScriptObject: null,
 });
 
 export function ScriptProvider({ children }: ScriptProviderProps) {
   const [targetWord, setTargetWord] = useState<string | null>(null);
   const [targetWordDetected, setTargetWordDetected] = useState<string | null>(null);
-  const [buttonId, setButtonId] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState<boolean>(false);
+  const [currentScriptObject, setCurrentScriptObject] = useState<ScriptObject | null>(null);
   const { readText, highlightFocussedDiv, removeHighlightOnDiv } = useSpeech();
   const { stopListening, startListening, recognisedSpeech } = useSpeechRecognitionContext();
   
-  function handleRecognisedSpeech() {
+  function handleRecognisedSpeech(scriptObject: ScriptObject) {
     const formatRecognisedSpeech = recognisedSpeech.trim().toLowerCase();
-    if (targetWord && formatRecognisedSpeech.includes(targetWord)) {
-      setTargetWordDetected(targetWord);
+    const response = handleSpeechPromptedAction(targetWord, formatRecognisedSpeech, scriptObject.userAction);
+    if (response?.isSuccess) {
+      setTargetWordDetected(response.targetWord);
       handleNextClick();
-
-      if (buttonId) {
-        const button = document.getElementById(buttonId);
-        if (button) {
-          button.click();
-        }
-      }
     }
+    
+    // if (targetWord && formatRecognisedSpeech.includes(targetWord)) {
+    //   setTargetWordDetected(targetWord);
+    //   handleNextClick();
+    //
+    //   if (buttonId) {
+    //     const button = document.getElementById(buttonId);
+    //     if (button) {
+    //       button.click();
+    //     }
+    //   }
+    // }
 
     if (formatRecognisedSpeech.includes('next')) {
       onTargetWordDetected('next');
@@ -92,6 +104,8 @@ export function ScriptProvider({ children }: ScriptProviderProps) {
 
     setSpeaking(true);
     for (const scriptObject of scriptArray) {
+      setCurrentScriptObject(scriptObject);
+      
       if (scriptObject.focussedDiv) {
         highlightFocussedDiv(scriptObject.focussedDiv);
       }
@@ -104,13 +118,13 @@ export function ScriptProvider({ children }: ScriptProviderProps) {
     return new Promise<void>(async (resolve) => {
       readText(scriptObject.text, {
         onSpeechStart: () => {
-          if (!scriptObject.targetPhrase) {
+          if (!scriptObject.userAction) {
             stopListening();
           }
         },
 
         onSpeechEnd: () => {
-          if (!scriptObject.targetPhrase) {
+          if (!scriptObject.userAction) {
             if (scriptObject.focussedDiv) {
               removeHighlightOnDiv(scriptObject.focussedDiv);
             }
@@ -118,12 +132,10 @@ export function ScriptProvider({ children }: ScriptProviderProps) {
             cleanup();
             return resolve();
           }
-
-          startListening();
-          setTargetWord(scriptObject.targetPhrase.phrase);
-
-          if (scriptObject.targetPhrase.buttonToClickId) {
-            setButtonId(scriptObject.targetPhrase.buttonToClickId);
+          
+          if (scriptObject.userAction.targetPhrase) {
+            startListening();
+            setTargetWord(scriptObject.userAction.targetPhrase);
           }
         }
       });
@@ -155,7 +167,7 @@ export function ScriptProvider({ children }: ScriptProviderProps) {
   }
   
   return (
-    <ReadScriptContext.Provider value={{handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking}}>
+    <ReadScriptContext.Provider value={{handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking, currentScriptObject}}>
       {children}
     </ReadScriptContext.Provider>
   )

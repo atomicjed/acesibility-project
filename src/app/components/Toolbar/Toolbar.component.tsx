@@ -1,4 +1,3 @@
-import { ScriptObject } from "../../lib/context/speech.context.tsx";
 import { useEffect } from "react";
 import { faEarListen } from "@fortawesome/free-solid-svg-icons/faEarListen";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -6,6 +5,7 @@ import "./Toolbar.css";
 import { Button } from "../Button.tsx";
 import {useScript} from "../../lib/context/script.context.tsx";
 import {useSpeechRecognitionContext} from "../../lib/context/speech-recognition.context.tsx";
+import {ScriptObject} from "../../lib/types/script-object.types.ts";
 
 export interface ToolbarProps {
   speaking: boolean;
@@ -15,7 +15,7 @@ export interface ToolbarProps {
 
 export default function Toolbar({ visible, script }: ToolbarProps ) {
   const { recognisedSpeech, startListening, stopListening, isListening } = useSpeechRecognitionContext();
-  const { handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking } = useScript();
+  const { handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking, currentScriptObject } = useScript();
 
   useEffect(() => {
     if (script) {
@@ -28,8 +28,10 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   }, [script]);
 
   useEffect(() => {
-    handleRecognisedSpeech();
-  }, [recognisedSpeech, targetWord]);
+    if (currentScriptObject) {
+      handleRecognisedSpeech(currentScriptObject);
+    }
+  }, [recognisedSpeech, targetWord, currentScriptObject]);
   
   return (
     <div className={`${!visible && 'hidden'} sticky bottom-0 z-[910] w-full text-black`}>

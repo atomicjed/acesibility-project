@@ -3,6 +3,7 @@ import Toolbar from "../../components/Toolbar/Toolbar.component.tsx";
 import Navbar from "../../components/Layout/Navbar.tsx";
 import {ScriptProvider} from "./script.context.tsx";
 import {SpeechRecognitionProvider} from "./speech-recognition.context.tsx";
+import {ScriptObject} from "../types/script-object.types.ts";
 
 type SpeechContextType = {
   readText: (text: string, speechState?: SpeechState) => void;
@@ -18,16 +19,6 @@ type SpeechState = {
   onSpeechEnd?: () => void;
   onError?: (event: SpeechSynthesisErrorEvent) => void;
 }
-
-export type ScriptObject = {
-  text: string;
-  textId?: number;
-  focussedDiv?: string;
-  targetPhrase?: { 
-    phrase: string,
-    buttonToClickId?: string,
-  }
-};
 
 interface SpeechProviderProps {
   children: ReactNode
@@ -95,7 +86,7 @@ export function SpeechProvider({ children }: SpeechProviderProps) {
     const utterance: SpeechSynthesisUtterance = new SpeechSynthesisUtterance(text);
     utterance.voice = voice ? voice : initialisedVoice;
     utterance.pitch = 1;
-    utterance.rate = 1.1;
+    utterance.rate = 1.2;
     utterance.volume = 1;
 
     utterance.onstart = () => {

@@ -1,11 +1,15 @@
-import { useEffect } from "react";
-import { faEarListen } from "@fortawesome/free-solid-svg-icons/faEarListen";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {useEffect} from "react";
+import {faEarListen} from "@fortawesome/free-solid-svg-icons/faEarListen";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import "./Toolbar.css";
-import { Button } from "../Button.tsx";
+import {Button} from "../Button.tsx";
 import {useScript} from "../../lib/context/script.context.tsx";
 import {useSpeechRecognitionContext} from "../../lib/context/speech-recognition.context.tsx";
 import {ScriptObject} from "../../lib/types/script-object.types.ts";
+import {RecognisedSpeechTypes} from "../../lib/enums/recognised-speech-types.enum.ts";
+import {useInput} from "../../lib/context/input.context.tsx";
+import {TargetWordAction} from "./ActionInstructions/TargetWordAction.component.tsx";
+import {UserInputAction} from "./ActionInstructions/UserInputAction/UserInputAction.tsx";
 
 export interface ToolbarProps {
   speaking: boolean;
@@ -14,8 +18,9 @@ export interface ToolbarProps {
 }
 
 export default function Toolbar({ visible, script }: ToolbarProps ) {
-  const { recognisedSpeech, startListening, stopListening, isListening } = useSpeechRecognitionContext();
+  const { recognisedSpeech, recognisedInputSpeech, startListening, stopListening, isListening, listeningFor } = useSpeechRecognitionContext();
   const { handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking, currentScriptObject } = useScript();
+  const { inputStage, handleRecognisedInputSpeech } = useInput();
 
   useEffect(() => {
     if (script) {
@@ -28,28 +33,34 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   }, [script]);
 
   useEffect(() => {
-    if (currentScriptObject) {
+    if (currentScriptObject && listeningFor === RecognisedSpeechTypes.TargetWord) {
       handleRecognisedSpeech(currentScriptObject);
     }
-  }, [recognisedSpeech, targetWord, currentScriptObject]);
+  }, [recognisedSpeech, listeningFor, targetWord, currentScriptObject]);
+
+  useEffect(() => {
+    async function onRecognisedInputSpeech() {
+      if (listeningFor === RecognisedSpeechTypes.UserInput && currentScriptObject) {
+        await handleRecognisedInputSpeech(currentScriptObject);
+      }
+    }
+    
+    void onRecognisedInputSpeech();
+  }, [recognisedInputSpeech, listeningFor, targetWord, currentScriptObject]);
   
   return (
     <div className={`${!visible && 'hidden'} sticky bottom-0 z-[910] w-full text-black`}>
       {isListening && (
         <div className={`bg-white border-b border-b-solid border-b-black py-4 flex items-center justify-center`}>
           <div className={'w-[90%] lg:w-[70%] grid grid-cols-2 gap-12'}>
-            
-            {targetWord && (
-              <div className={'flex justify-center'}>
-                <div className={'text-gray-400 font-bold'}>Listening for: <span
-                  className={`${targetWordDetected === targetWord && 'flash-green'}`}>{targetWord}</span></div>
-              </div>
+
+            {listeningFor === RecognisedSpeechTypes.UserInput && (
+              <UserInputAction inputStage={inputStage} recognisedInputSpeech={recognisedInputSpeech} />
             )}
-            <div className={'flex justify-center'}>
-              <div className={'text-gray-400 font-bold'}>Response: <span
-                className={`${targetWordDetected === targetWord && 'flash-green'}`}>{recognisedSpeech ? recognisedSpeech : '...'}</span>
-              </div>
-            </div>
+            {listeningFor === RecognisedSpeechTypes.TargetWord && (
+              <TargetWordAction targetWordDetected={targetWordDetected} targetWord={targetWord} recognisedSpeech={recognisedSpeech} />
+            )}
+            
             </div>
           </div>
           )}

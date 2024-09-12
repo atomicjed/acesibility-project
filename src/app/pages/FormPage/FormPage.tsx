@@ -1,47 +1,53 @@
 import Input from "../../components/Input.tsx";
-import {Button} from "../../components/Button.tsx";
+import {useSpeech} from "../../lib/context/speech.context.tsx";
+import {useEffect} from "react";
+import {UserActionType} from "../../lib/enums/action-type.enum.ts";
 
 export default function FormPage() {
-    function onFocusInput() {
-        const nameInput = document.getElementById('fullNameInput');
-        if (nameInput) {
-            nameInput.focus();   
-        }
-    }
+  const { updatePageScript } = useSpeech();
 
-    function fillInputField(elementId: string, value: string) {
-      const nameInput = document.getElementById(elementId);
-      if (nameInput && nameInput instanceof HTMLInputElement) {
-        nameInput.value = value;
-      } else {
-        console.log('Input element with id ', elementId, ' could not be found');
-      }
-    }
-      
-    function capitaliseInputWord(elementId: string, word: string) {
-      const input = document.getElementById(elementId);
-      if (input && input instanceof HTMLInputElement) {
-        const regex = new RegExp(`\\b${word}\\b`, 'gi');
-        input.value = input.value.replace(regex, () => {
-          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-        });
-      } else {
-        console.log('Input element with id ', elementId, ' could not be found');
-      }
-    }
+  useEffect(() => {
+    updatePageScript([
+      {
+        text: 'This is a form page, please fill out the following forms',
+        focussedDiv: 'form-header'
+      },
+      {
+        text: 'What is your full name?',
+        focussedDiv: 'fullNameInput',
+        userAction: {
+          userActionType: UserActionType.Input,
+          elementId: 'fullNameInput'
+        },
+      },
+      {
+        text: 'Thank you for completing this form! im just gonna waffle on a bit longer to hopefully get rid of this recognised speech..',
+        focussedDiv: 'emailInput',
+      },
+      {
+        text: 'What is your email?',
+        focussedDiv: 'emailInput',
+        userAction: {
+          userActionType: UserActionType.Input,
+          elementId: 'emailInput'
+        },
+      },
+      {
+        text: 'Thank you for completing this form!',
+        focussedDiv: 'emailInput',
+      },
+    ]);
+  }, []);
       
     return (
         <div className={'bg-black w-full h-screen text-white flex flex-col items-center'}>
-            <h2 className={'font-bold italic text-5xl py-8 mt-8'}>
+            <h2 id={'form-header'} className={'font-bold italic text-4xl py-8 mt-8'}>
                 Fill out this form to win a prize
             </h2>
-            <Button onClick={onFocusInput} variant={'light'}>Focus input</Button>
-            <Button onClick={() => fillInputField('fullNameInput', 'jose Mourinho')} variant={'light'}>Fill in Name</Button>
-            <Button onClick={() => capitaliseInputWord('fullNameInput', 'jose')} variant={'light'}>Capitals</Button>
           
             <form onSubmit={() => alert('Prize has been won')} className={'w-[50%] mt-8 flex flex-col gap-6'}>
                 <Input id={'fullNameInput'} className={'w-full'} placeholder={'Full Name'} />
-                <Input className={'w-full'} placeholder={'Email'} />
+                <Input id={'emailInput'} className={'w-full'} placeholder={'Email'} />
             </form>
         </div>
     )

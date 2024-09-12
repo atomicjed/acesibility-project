@@ -1,13 +1,10 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, useContext } from "react";
 import useSpeechRecognition from "../utils/speech-recognition.utils.ts";
+import {ContextPropsTypes} from "../types/context-props.types.ts";
 
 const SpeechRecognitionContext = createContext<ReturnType<typeof useSpeechRecognition> | null>(null);
 
-interface SpeechRecognitionProviderProps {
-  children: ReactNode;
-}
-
-export const SpeechRecognitionProvider = ({ children }: SpeechRecognitionProviderProps) => {
+export const SpeechRecognitionProvider = ({ children }: ContextPropsTypes) => {
   const speechRecognition = useSpeechRecognition();
 
   return (

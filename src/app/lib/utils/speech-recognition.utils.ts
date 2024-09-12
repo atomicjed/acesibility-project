@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
+import {RecognisedSpeechTypes} from "../enums/recognised-speech-types.enum.ts";
 
 let recognition: any = null;
 
@@ -13,8 +14,10 @@ if ("webkitSpeechRecognition" in window) {
 export default function useSpeechRecognition() {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [recognisedSpeech, setRecognisedSpeech] = useState("");
+  const [recognisedInputSpeech, setRecognisedInputSpeech] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [speechRecognitionError, setSpeechRecognitionError] = useState<string | null>(null);
+  const [listeningFor, setListeningFor] = useState<RecognisedSpeechTypes>(RecognisedSpeechTypes.Default);
 
   useEffect(() => {
     initialiseRecognition();
@@ -29,6 +32,7 @@ export default function useSpeechRecognition() {
       recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
         const result = event.results[event.results.length - 1][0].transcript;
         setRecognisedSpeech(result);
+        setRecognisedInputSpeech(result);
       };
 
       recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -62,8 +66,13 @@ export default function useSpeechRecognition() {
     recognition?.stop();
   }
   
-  function updateRecognisedSpeech(text: string) {
-    setRecognisedSpeech(text);
+  function clearRecognisedSpeech() {
+    setRecognisedSpeech('');
+    setRecognisedInputSpeech('');
+  }
+  
+  function updateListeningFor(recognisedSpeechType: RecognisedSpeechTypes) {
+    setListeningFor(recognisedSpeechType);
   }
   
   return {
@@ -72,7 +81,10 @@ export default function useSpeechRecognition() {
     startListening,
     stopListening,
     speechRecognitionError,
-    updateRecognisedSpeech,
+    clearRecognisedSpeech,
+    recognisedInputSpeech,
+    updateListeningFor,
+    listeningFor,
     hasRecognitionSupport: !!recognition
   }
 }

@@ -1,9 +1,12 @@
-import React, {createContext, ReactNode, useContext, useEffect, useState} from 'react';
+import React, {createContext, useContext, useEffect, useState} from 'react';
 import Toolbar from "../../components/Toolbar/Toolbar.component.tsx";
 import Navbar from "../../components/Layout/Navbar.tsx";
 import {ScriptProvider} from "./script.context.tsx";
 import {SpeechRecognitionProvider} from "./speech-recognition.context.tsx";
 import {ScriptObject} from "../types/script-object.types.ts";
+import {InputProvider} from "./input.context.tsx";
+import {ContextPropsTypes} from "../types/context-props.types.ts";
+import {ActionProvider} from "./action.context.tsx";
 
 type SpeechContextType = {
   readText: (text: string, speechState?: SpeechState) => void;
@@ -20,10 +23,6 @@ type SpeechState = {
   onError?: (event: SpeechSynthesisErrorEvent) => void;
 }
 
-interface SpeechProviderProps {
-  children: ReactNode
-}
-
 const speechContextIsNotInitialised = () => {
   console.warn('SpeechContext is not initialised');
 };
@@ -37,7 +36,7 @@ const SpeechContext = createContext<SpeechContextType>({
   toggleToolbar: speechContextIsNotInitialised,
 });
 
-export function SpeechProvider({ children }: SpeechProviderProps) {
+export function SpeechProvider({ children }: ContextPropsTypes) {
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [pageScript, setPageScript] = useState<ScriptObject[] | null>(null);
   const [toolbarIsVisible, setToolbarIsVisible] = useState<boolean>(false);
@@ -86,7 +85,7 @@ export function SpeechProvider({ children }: SpeechProviderProps) {
     const utterance: SpeechSynthesisUtterance = new SpeechSynthesisUtterance(text);
     utterance.voice = voice ? voice : initialisedVoice;
     utterance.pitch = 1;
-    utterance.rate = 1.2;
+    utterance.rate = 1;
     utterance.volume = 1;
 
     utterance.onstart = () => {
@@ -152,9 +151,13 @@ export function SpeechProvider({ children }: SpeechProviderProps) {
       <Navbar toolbarIsVisible={toolbarIsVisible} />
       {children}
       <SpeechRecognitionProvider>
-        <ScriptProvider>
-          <Toolbar speaking={window.speechSynthesis.speaking} script={pageScript} visible={toolbarIsVisible} />
-        </ScriptProvider>
+        <InputProvider>
+          <ActionProvider>
+            <ScriptProvider>
+              <Toolbar speaking={window.speechSynthesis.speaking} script={pageScript} visible={toolbarIsVisible} />
+            </ScriptProvider>
+          </ActionProvider>
+        </InputProvider>
       </SpeechRecognitionProvider>
     </SpeechContext.Provider>
   );

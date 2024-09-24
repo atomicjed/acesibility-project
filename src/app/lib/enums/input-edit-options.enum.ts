@@ -1,8 +1,8 @@
 export enum InputEditOptions {
-  ReplaceWord = 'replace word',
-  AddToAnswer = 'add to answer',
+  ReplaceWord = 'replace',
+  AddToAnswer = 'add',
   StartAgain = 'start again',
-  CapitaliseWord = 'capitalise word',
+  CapitaliseWord = 'capital',
   DeleteSentence = 'delete sentence',
-  AddPunctuation = 'add punctuation',
+  AddPunctuation = 'punctuation',
 }

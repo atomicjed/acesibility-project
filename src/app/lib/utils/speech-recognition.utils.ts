@@ -13,8 +13,12 @@ if ("webkitSpeechRecognition" in window) {
 
 export default function useSpeechRecognition() {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  
   const [recognisedSpeech, setRecognisedSpeech] = useState("");
   const [recognisedInputSpeech, setRecognisedInputSpeech] = useState("");
+  const [interimRecognisedSpeech, setInterimRecognisedSpeech] = useState("");
+  const [interimRecognisedInputSpeech, setInterimRecognisedInputSpeech] = useState("");
+  
   const [isListening, setIsListening] = useState(false);
   const [speechRecognitionError, setSpeechRecognitionError] = useState<string | null>(null);
   const [listeningFor, setListeningFor] = useState<RecognisedSpeechTypes>(RecognisedSpeechTypes.Default);
@@ -24,30 +28,37 @@ export default function useSpeechRecognition() {
   }, []);
   
   function initialiseRecognition() {
-    if ("webkitSpeechRecognition" in window) {
-      const recognitionInstance = new webkitSpeechRecognition();
-      recognitionInstance.continuous = true;
-      recognitionInstance.lang = "en-GB";
-
-      recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
-        const result = event.results[event.results.length - 1][0].transcript;
-        setRecognisedSpeech(result);
-        setRecognisedInputSpeech(result);
-      };
-
-      recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
-        if (event.error === 'no-speech') {
-          return;
-        }
-        console.error("Speech recognition error:", event.error);
-        setSpeechRecognitionError(`A speech recognition error occured: ${event.error}`);
-        stopListening(); 
-      };
-
-      setRecognition(recognitionInstance);
-    } else {
+    if (!("webkitSpeechRecognition" in window)) {
       console.log("Browser doesn't support speech recognition");
+      return;
     }
+    
+    const recognitionInstance = new webkitSpeechRecognition();
+    recognitionInstance.continuous = true;
+    recognitionInstance.interimResults = true;
+    recognitionInstance.lang = "en-GB";
+
+    recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+      const result = event.results[event.results.length - 1][0].transcript;
+      setInterimRecognisedSpeech(result);
+      setInterimRecognisedInputSpeech(result);
+      
+      if (event.results[0].isFinal) {
+        setRecognisedSpeech(recognisedSpeech + ' ' + result);
+        setRecognisedInputSpeech(recognisedInputSpeech + ' ' + result);
+      }
+    };
+
+    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === 'no-speech') {
+        return;
+      }
+      console.error("Speech recognition error:", event.error);
+      setSpeechRecognitionError(`A speech recognition error occured: ${event.error}`);
+      stopListening();
+    };
+
+    setRecognition(recognitionInstance);
   }
   
   function startListening() {
@@ -61,7 +72,6 @@ export default function useSpeechRecognition() {
   }
   
   function stopListening() {
-    console.log()
     setIsListening(false);
     recognition?.stop();
   }
@@ -77,12 +87,14 @@ export default function useSpeechRecognition() {
   
   return {
     recognisedSpeech,
+    recognisedInputSpeech,
+    interimRecognisedSpeech,
+    interimRecognisedInputSpeech,
     isListening,
     startListening,
     stopListening,
     speechRecognitionError,
     clearRecognisedSpeech,
-    recognisedInputSpeech,
     updateListeningFor,
     listeningFor,
     hasRecognitionSupport: !!recognition

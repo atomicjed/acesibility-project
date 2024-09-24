@@ -1,6 +1,6 @@
-import { useSpeech } from "../../lib/context/speech.context.tsx";
 import {useEffect, useState} from "react";
 import {UserActionType} from "../../lib/enums/action-type.enum.ts";
+import {useSpeech} from "../../lib/context/accessibility.context.tsx";
 
 export default function HomePage() {
   const [isAccessibleColourway, setIsAccessibleColourway] = useState<boolean>(false);

@@ -1,5 +1,5 @@
 import {createContext, useContext} from "react";
-import {ContextPropsTypes} from "../types/context-props.types.ts";
+import {ContextProps} from "../types/context-props.types.ts";
 import {UserActionObject} from "../types/script-object.types.ts";
 import {UserActionType} from "../enums/action-type.enum.ts";
 
@@ -16,7 +16,7 @@ const ActionContext = createContext<ActionContextType>({
   handleSpeechPromptedAction: () => {return Promise.resolve(undefined)}
 });
 
-export function ActionProvider({ children }: ContextPropsTypes) {
+export function ActionProvider({ children }: ContextProps) {
 
   async function handleSpeechPromptedAction(recognisedSpeech: string | null, userActionObject: UserActionObject | undefined, targetWord?: string): Promise<ActionResponse | undefined> {
     if (!userActionObject) {

@@ -1,13 +1,16 @@
 import {createContext, useContext, useState} from "react";
-import {useSpeech} from "./speech.context.tsx";
 import {useSpeechRecognitionContext} from "./speech-recognition.context.tsx";
-import {ContextPropsTypes} from "../types/context-props.types.ts";
+import {ContextProps} from "../types/context-props.types.ts";
 import {InputEditOptions} from "../enums/input-edit-options.enum.ts";
 import {InputStage} from "../enums/InputStage.enum.ts";
 import {ScriptObject} from "../types/script-object.types.ts";
 import {handleFillInputAction} from "../utils/input-utlis/recognised-fill-input-speech.ts";
 import {SuccessEnum} from "../enums/success.enum.ts";
 import {handleRecognisedIsThisCorect} from "../utils/input-utlis/is-this-correct.utils.ts";
+import {handleRecognisedInputEditOption} from "../utils/input-utlis/input-edit-options.utils.ts";
+import {findWordToReplace} from "../utils/input-utlis/input.utils.ts";
+import {useReplaceWord} from "./replace-word.context.tsx";
+import {useSpeech} from "./accessibility.context.tsx";
 
 type InputContextType = {
   handleRecognisedInputSpeech: (currentScriptObject: ScriptObject) => Promise<SuccessEnum | void>;
@@ -26,11 +29,12 @@ const InputContext = createContext<InputContextType>({
   inputStage: InputStage.FillInput,
 });
 
-export function InputProvider({ children }: ContextPropsTypes) {
+export function InputProvider({ children }: ContextProps) {
   const [editOptions, setEditOptions] = useState<InputEditOptions[] | null>(null);
   const [inputStage, setInputStage] = useState<InputStage>(InputStage.FillInput);
   const { readText } = useSpeech();
-  const { recognisedInputSpeech, stopListening, startListening, clearRecognisedSpeech } = useSpeechRecognitionContext();
+  const { recognisedInputSpeech, interimRecognisedInputSpeech, stopListening, startListening, clearRecognisedSpeech } = useSpeechRecognitionContext();
+  const { handleFindWordToReplace, handleReplaceWordWith, handleReplaceWord, updateWordToReplace } = useReplaceWord();
   const editOptionsArray: InputEditOptions[] = [
     InputEditOptions.ReplaceWord,
     InputEditOptions.AddToAnswer,
@@ -42,6 +46,7 @@ export function InputProvider({ children }: ContextPropsTypes) {
   
   async function handleRecognisedInputSpeech(currentScriptObject: ScriptObject): Promise<SuccessEnum | void> {
     const formattedInputSpeech = recognisedInputSpeech.trim().toLowerCase();
+    const formattedInterimInputSpeech = interimRecognisedInputSpeech.trim().toLowerCase();
     
     if (!currentScriptObject.userAction) {
       return SuccessEnum.UnSuccessful;
@@ -49,26 +54,61 @@ export function InputProvider({ children }: ContextPropsTypes) {
     
     if (inputStage === InputStage.FillInput && formattedInputSpeech.length > 0) {
       handleFillInputAction(currentScriptObject.userAction, formattedInputSpeech);
-      await handleUserInputEdit(formattedInputSpeech);
+      await handleIsThisCorrect(formattedInputSpeech);
     }
     if (inputStage == InputStage.IsThisCorrect) {
-      handleRecognisedIsThisCorect(formattedInputSpeech);
+      handleRecognisedIsThisCorect(formattedInterimInputSpeech);
+    }
+    if (inputStage == InputStage.InputEditOptions) {
+      const option = handleRecognisedInputEditOption(formattedInterimInputSpeech);
+      await handleOptionSelected(option);
+    }
+    
+    if (inputStage == InputStage.FindWordToReplace && currentScriptObject.userAction.elementId) {
+      const doesWordExistInInput = findWordToReplace(currentScriptObject.userAction.elementId, formattedInputSpeech);
+      if (doesWordExistInInput) {
+        updateWordToReplace(formattedInputSpeech);
+        window.dispatchEvent(new Event('word-to-replace'));
+        await handleReplaceWordWith(() => setInputStage(InputStage.ReplaceWordWith), formattedInputSpeech);
+      }
+    }
+    
+    if (inputStage == InputStage.ReplaceWordWith && currentScriptObject.userAction.elementId && formattedInputSpeech.length > 0) {
+      const newInputValue = handleReplaceWord(currentScriptObject.userAction.elementId, formattedInputSpeech);
+      
+      if (newInputValue) {
+        setInputStage(InputStage.IsThisCorrect);
+        await handleIsThisCorrect(newInputValue);
+      }
     }
   }
   
+  async function handleOptionSelected(option?: InputEditOptions) {
+    if (!option) {
+      return;
+    }
+    
+    window.dispatchEvent(new Event('optionSelected'));
+    switch(option) {
+      case InputEditOptions.ReplaceWord:
+        await handleFindWordToReplace(() => setInputStage(InputStage.FindWordToReplace));
+        break;
+        
+    }
+  }
   
-  async function handleUserInputEdit(currentInput: string) {
+  async function handleIsThisCorrect(currentInput: string) {
     setInputStage(InputStage.IsThisCorrect);
     stopListening();
     return new Promise<void>(async (resolve) => {
       readText(`You inputted ${currentInput}, is this correct?`, {
         onSpeechStart: () => {
-          stopListening();
           clearRecognisedSpeech();
         },
         onSpeechEnd: () => startListening()
       });
       function onIsCorrect() {
+        cleanup();
         setEditOptions(null);
         resolve();
       }
@@ -92,7 +132,7 @@ export function InputProvider({ children }: ContextPropsTypes) {
   async function handleInputEditOptions() {
     setInputStage(InputStage.InputEditOptions);
     return new Promise<void>(async (resolve) => {
-      readText(`Choose an action from the following options: ${InputEditOptions.ReplaceWord}... ${InputEditOptions.AddToAnswer}... ${InputEditOptions.AddPunctuation}... ${InputEditOptions.CapitaliseWord}... ${InputEditOptions.StartAgain}... ${InputEditOptions.DeleteSentence}`, {
+      readText(`Choose an action from the following options: ${InputEditOptions.ReplaceWord}... ${InputEditOptions.AddToAnswer}... ${InputEditOptions.StartAgain}... ${InputEditOptions.CapitaliseWord}... ${InputEditOptions.AddPunctuation}`, {
         onSpeechStart: () => {
           stopListening();
           setEditOptions(editOptionsArray);
@@ -100,8 +140,19 @@ export function InputProvider({ children }: ContextPropsTypes) {
         },
         onSpeechEnd: () => {
           startListening();
-        }
+        },
       });
+      
+      function onOptionSelected() {
+        cleanup();
+        console.log('option selected');
+        resolve();
+      }
+      function cleanup() {
+        window.removeEventListener('optionSelected', onOptionSelected);
+      }
+
+      window.addEventListener('optionSelected', onOptionSelected);
     })
   }
     

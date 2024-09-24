@@ -3,20 +3,10 @@ export function handleRecognisedIsThisCorect(inputSpeech: string) {
   const negativeResponses = ['no', 'nope', 'nah', 'not really', 'incorrect', 'wrong', 'negative', 'absolutely not', 'certainly not', 'no way', 'uh-uh', 'nuh-uh', 'no chance'];
 
   if (affirmativeResponses.some(word => inputSpeech.includes(word))) {
-    handleYes();
+    window.dispatchEvent(new Event('yes'));
   }
 
   if (negativeResponses.some(word => inputSpeech.includes(word))) {
-    handleNo();
+    window.dispatchEvent(new Event('no'));
   }
-}
-
-export function handleYes() {
-  const event = new Event('yes');
-  window.dispatchEvent(event);
-}
-
-export function handleNo() {
-  const event = new Event('no');
-  window.dispatchEvent(event);
 }

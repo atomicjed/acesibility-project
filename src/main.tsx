@@ -2,12 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import Router from "./app/router";
-import { SpeechProvider } from "./app/lib/context/speech.context.tsx";
+import {AccessibilityProvider} from "./app/lib/context/accessibility.context.tsx";
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <SpeechProvider>
+    <AccessibilityProvider>
       <Router />
-    </SpeechProvider>
+    </AccessibilityProvider>
   </React.StrictMode>,
 )

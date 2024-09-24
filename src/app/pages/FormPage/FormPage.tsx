@@ -1,7 +1,7 @@
 import Input from "../../components/Input.tsx";
-import {useSpeech} from "../../lib/context/speech.context.tsx";
 import {useEffect} from "react";
 import {UserActionType} from "../../lib/enums/action-type.enum.ts";
+import {useSpeech} from "../../lib/context/accessibility.context.tsx";
 
 export default function FormPage() {
   const { updatePageScript } = useSpeech();
@@ -9,7 +9,7 @@ export default function FormPage() {
   useEffect(() => {
     updatePageScript([
       {
-        text: 'This is a form page, please fill out the following forms',
+        text: 'Fill out this form to win a prize!',
         focussedDiv: 'form-header'
       },
       {
@@ -21,10 +21,6 @@ export default function FormPage() {
         },
       },
       {
-        text: 'Thank you for completing this form! im just gonna waffle on a bit longer to hopefully get rid of this recognised speech..',
-        focussedDiv: 'emailInput',
-      },
-      {
         text: 'What is your email?',
         focussedDiv: 'emailInput',
         userAction: {
@@ -33,8 +29,7 @@ export default function FormPage() {
         },
       },
       {
-        text: 'Thank you for completing this form!',
-        focussedDiv: 'emailInput',
+        text: 'Thank you for completing this form!'
       },
     ]);
   }, []);

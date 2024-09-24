@@ -18,7 +18,7 @@ export interface ToolbarProps {
 }
 
 export default function Toolbar({ visible, script }: ToolbarProps ) {
-  const { recognisedSpeech, recognisedInputSpeech, startListening, stopListening, isListening, listeningFor } = useSpeechRecognitionContext();
+  const { recognisedSpeech, recognisedInputSpeech, interimRecognisedSpeech, interimRecognisedInputSpeech, startListening, stopListening, isListening, listeningFor } = useSpeechRecognitionContext();
   const { handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking, currentScriptObject } = useScript();
   const { inputStage, handleRecognisedInputSpeech } = useInput();
 
@@ -36,9 +36,10 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
     if (currentScriptObject && listeningFor === RecognisedSpeechTypes.TargetWord) {
       handleRecognisedSpeech(currentScriptObject);
     }
-  }, [recognisedSpeech, listeningFor, targetWord, currentScriptObject]);
+  }, [recognisedSpeech, interimRecognisedSpeech, listeningFor, targetWord, currentScriptObject]);
 
   useEffect(() => {
+    console.log('Recognised input speech:', recognisedInputSpeech);
     async function onRecognisedInputSpeech() {
       if (listeningFor === RecognisedSpeechTypes.UserInput && currentScriptObject) {
         await handleRecognisedInputSpeech(currentScriptObject);
@@ -46,32 +47,27 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
     }
     
     void onRecognisedInputSpeech();
-  }, [recognisedInputSpeech, listeningFor, targetWord, currentScriptObject]);
+  }, [recognisedInputSpeech, interimRecognisedInputSpeech, listeningFor, targetWord, currentScriptObject]);
   
   return (
     <div className={`${!visible && 'hidden'} sticky bottom-0 z-[910] w-full text-black`}>
-      {isListening && (
-        <div className={`bg-white border-b border-b-solid border-b-black py-4 flex items-center justify-center`}>
-          <div className={'w-[90%] lg:w-[70%] grid grid-cols-2 gap-12'}>
+      {listeningFor === RecognisedSpeechTypes.UserInput && (
+        <UserInputAction interimRecognisedInputSpeech={interimRecognisedInputSpeech} inputStage={inputStage} recognisedInputSpeech={recognisedInputSpeech}/>
+      )}
+      {listeningFor === RecognisedSpeechTypes.TargetWord && isListening && (
+        <TargetWordAction targetWordDetected={targetWordDetected} targetWord={targetWord}
+                          recognisedSpeech={recognisedSpeech}/>
+      )}
 
-            {listeningFor === RecognisedSpeechTypes.UserInput && (
-              <UserInputAction inputStage={inputStage} recognisedInputSpeech={recognisedInputSpeech} />
-            )}
-            {listeningFor === RecognisedSpeechTypes.TargetWord && (
-              <TargetWordAction targetWordDetected={targetWordDetected} targetWord={targetWord} recognisedSpeech={recognisedSpeech} />
-            )}
-            
-            </div>
-          </div>
-          )}
-
-          <div className={'bg-white flex justify-center items-center'}>
-            <div className={`bg-white py-4 w-full sm:w-[90%] lg:w-[80%] grid grid-cols-3 gap-4`}>
-              {!isListening ? (
+      <div className={'bg-white flex justify-center items-center'}>
+        <div className={`bg-white py-4 w-full sm:w-[90%] lg:w-[80%] grid grid-cols-3 gap-4`}>
+          {!isListening ? (
             <div></div>
           ) : (
-            <div onMouseDown={startListening} onMouseUp={stopListening} className={'ml-[25px] h-full flex items-center cursor-pointer'}>
-              <div className={'h-[35px] lg:h-[50px] w-[35px] lg:w-[50px] relative inline-flex items-center justify-center'}>
+            <div onMouseDown={startListening} onMouseUp={stopListening}
+                 className={'ml-[25px] h-full flex items-center cursor-pointer'}>
+              <div
+                className={'h-[35px] lg:h-[50px] w-[35px] lg:w-[50px] relative inline-flex items-center justify-center'}>
                 <FontAwesomeIcon icon={faEarListen} className={'text-lg lg:text-xl'}/>
                 <div className={`${isListening ? '' : 'hidden'} spinner`}/>
               </div>
@@ -81,13 +77,19 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
           {speaking ? (
             <div className={'flex items-center justify-center gap-6'}>
               <div className={`${isListening && 'mt-8'} flex flex-col gap-2 items-center`}>
-                <button onClick={handleCancelSpeech} className={'p-2 border-black border-solid border rounded-2xl'}>Cancel</button>
-                { isListening && <div className={`${targetWordDetected === 'cancel' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or say "cancel"</div> }
+                <button onClick={handleCancelSpeech}
+                        className={'p-2 border-black border-solid border rounded-2xl'}>Cancel
+                </button>
+                {isListening && <div
+                    className={`${targetWordDetected === 'cancel' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or
+                    say "cancel"</div>}
               </div>
-              { !isListening ? <div>Speaking...</div> : <div>Listening...</div> }
+
+              {!isListening ? <div>Speaking...</div> : <div>Listening...</div>}
+
               <div className={`${isListening && 'mt-8'} flex flex-col gap-2 items-center`}>
                 <button onClick={handleNextClick} className={'p-2 border-black border-solid border rounded-2xl'}>Next</button>
-                { isListening && <div className={`${targetWordDetected === 'next' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or say "next"</div> }
+                {isListening && <div className={`${targetWordDetected === 'next' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or say "next"</div>}
               </div>
             </div>
           ) : (

@@ -1,6 +1,7 @@
-import { useSpeech } from "../../lib/context/speech.context.tsx";
+
 import { Button } from "../Button.tsx";
 import logo from "../../../assets/atomic-logo.svg";
+import {useSpeech} from "../../lib/context/accessibility.context.tsx";
 
 interface INavbarProps {
   toolbarIsVisible: boolean;

@@ -5,8 +5,9 @@ import {ScriptProvider} from "./script.context.tsx";
 import {SpeechRecognitionProvider} from "./speech-recognition.context.tsx";
 import {ScriptObject} from "../types/script-object.types.ts";
 import {InputProvider} from "./input.context.tsx";
-import {ContextPropsTypes} from "../types/context-props.types.ts";
+import {ContextProps} from "../types/context-props.types.ts";
 import {ActionProvider} from "./action.context.tsx";
+import {ReplaceWordProvider} from "./replace-word.context.tsx";
 
 type SpeechContextType = {
   readText: (text: string, speechState?: SpeechState) => void;
@@ -36,7 +37,7 @@ const SpeechContext = createContext<SpeechContextType>({
   toggleToolbar: speechContextIsNotInitialised,
 });
 
-export function SpeechProvider({ children }: ContextPropsTypes) {
+export function AccessibilityProvider({ children }: ContextProps) {
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [pageScript, setPageScript] = useState<ScriptObject[] | null>(null);
   const [toolbarIsVisible, setToolbarIsVisible] = useState<boolean>(false);
@@ -151,13 +152,15 @@ export function SpeechProvider({ children }: ContextPropsTypes) {
       <Navbar toolbarIsVisible={toolbarIsVisible} />
       {children}
       <SpeechRecognitionProvider>
-        <InputProvider>
-          <ActionProvider>
-            <ScriptProvider>
-              <Toolbar speaking={window.speechSynthesis.speaking} script={pageScript} visible={toolbarIsVisible} />
-            </ScriptProvider>
-          </ActionProvider>
-        </InputProvider>
+        <ReplaceWordProvider>
+          <InputProvider>
+            <ActionProvider>
+              <ScriptProvider>
+                <Toolbar speaking={window.speechSynthesis.speaking} script={pageScript} visible={toolbarIsVisible} />
+              </ScriptProvider>
+            </ActionProvider>
+          </InputProvider>
+        </ReplaceWordProvider>
       </SpeechRecognitionProvider>
     </SpeechContext.Provider>
   );

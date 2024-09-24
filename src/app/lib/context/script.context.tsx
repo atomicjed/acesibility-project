@@ -1,11 +1,12 @@
-import {createContext, ReactNode, useContext, useState} from "react";
-import {useSpeech} from "./speech.context.tsx";
+import {createContext, useContext, useState} from "react";
 import {useSpeechRecognitionContext} from "./speech-recognition.context.tsx";
 import {ScriptObject} from "../types/script-object.types.ts";
 import {useAction} from "./action.context.tsx";
 import {UserActionType} from "../enums/action-type.enum.ts";
 import {RecognisedSpeechTypes} from "../enums/recognised-speech-types.enum.ts";
 import {focusInput} from "../utils/input-utlis/input.utils.ts";
+import {ContextProps} from "../types/context-props.types.ts";
+import {useSpeech} from "./accessibility.context.tsx";
 
 type ReadScriptContextType = {
   handleReadScript: (scriptArray: ScriptObject[] | null) => Promise<void>;
@@ -16,10 +17,6 @@ type ReadScriptContextType = {
   targetWordDetected: string | null;
   speaking: boolean;
   currentScriptObject: ScriptObject | null;
-}
-
-interface ScriptProviderProps {
-  children: ReactNode;
 }
 
 const ReadScriptContext = createContext<ReadScriptContextType>({
@@ -38,7 +35,7 @@ const ReadScriptContext = createContext<ReadScriptContextType>({
   currentScriptObject: null,
 });
 
-export function ScriptProvider({ children }: ScriptProviderProps) {
+export function ScriptProvider({ children }: ContextProps) {
   const [targetWord, setTargetWord] = useState<string | undefined>(undefined);
   const [targetWordDetected, setTargetWordDetected] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState<boolean>(false);

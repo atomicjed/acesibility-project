@@ -7,6 +7,8 @@ import {RecognisedSpeechTypes} from "../enums/recognised-speech-types.enum.ts";
 import {focusInput} from "../utils/input-utlis/input.utils.ts";
 import {ContextProps} from "../types/context-props.types.ts";
 import {useSpeech} from "./accessibility.context.tsx";
+import {useInput} from "./input.context.tsx";
+import {InputStage} from "../enums/InputStage.enum.ts";
 
 type ReadScriptContextType = {
   handleReadScript: (scriptArray: ScriptObject[] | null) => Promise<void>;
@@ -20,13 +22,8 @@ type ReadScriptContextType = {
 }
 
 const ReadScriptContext = createContext<ReadScriptContextType>({
-  handleReadScript: async (scriptArray: ScriptObject[] | null) => {
-    console.log("Default handleReadScript called", scriptArray);
-    return Promise.resolve();
-  },
-  handleRecognisedSpeech: (scriptObject: ScriptObject) => {
-    console.log('Uninitialised handleRecognisedSpeech function', scriptObject);
-  },
+  handleReadScript: async () => {return Promise.resolve();},
+  handleRecognisedSpeech: () => {},
   handleNextClick: () => {},
   handleCancelSpeech: () => {},
   targetWord: undefined,
@@ -41,12 +38,14 @@ export function ScriptProvider({ children }: ContextProps) {
   const [speaking, setSpeaking] = useState<boolean>(false);
   const [currentScriptObject, setCurrentScriptObject] = useState<ScriptObject | null>(null);
   const { readText, highlightFocussedDiv, removeHighlightOnDiv } = useSpeech();
-  const { stopListening, startListening, clearRecognisedSpeech, recognisedSpeech, updateListeningFor } = useSpeechRecognitionContext();
+  const { stopListening, startListening, recognisedSpeech, updateListeningFor } = useSpeechRecognitionContext();
   const { handleSpeechPromptedAction } = useAction();
+  const { updateInputStage } = useInput();
   
   async function handleRecognisedSpeech(scriptObject: ScriptObject) {
     const formatRecognisedSpeech = recognisedSpeech.trim().toLowerCase();
     const response = await handleSpeechPromptedAction(formatRecognisedSpeech, scriptObject.userAction, targetWord);
+  
     if (response?.isSuccess) {
       onRecognisedSpeechSuccess(response.recognisedWord);
       handleNextClick();
@@ -84,7 +83,6 @@ export function ScriptProvider({ children }: ContextProps) {
 
     setTimeout(() => {
       setTargetWordDetected(null);
-      clearRecognisedSpeech();
     }, 1000);
   }
 
@@ -110,9 +108,7 @@ export function ScriptProvider({ children }: ContextProps) {
     return new Promise<void>(async (resolve) => {
       readText(scriptObject.text, {
         onSpeechStart: () => {
-          if (!scriptObject.userAction) {
-            stopListening();
-          }
+          stopListening();
         },
 
         onSpeechEnd: () => {
@@ -134,6 +130,7 @@ export function ScriptProvider({ children }: ContextProps) {
             }
             
             if (scriptObject.userAction.userActionType === UserActionType.Input && scriptObject.userAction.elementId) {
+              updateInputStage(InputStage.FillInput);
               updateListeningFor(RecognisedSpeechTypes.UserInput);
               focusInput(scriptObject.userAction.elementId);
             }

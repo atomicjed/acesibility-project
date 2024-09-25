@@ -24,7 +24,7 @@ const ReplaceWordContext = createContext<ReplaceWordContextType>({
 
 export function ReplaceWordProvider({children}: ContextProps) {
   const { readText } = useSpeech();
-  const { stopListening, clearRecognisedSpeech, startListening } = useSpeechRecognitionContext();
+  const { stopListening, startListening } = useSpeechRecognitionContext();
   const [wordToReplace, setWordToReplace] = useState<string | null>(null);
 
   async function handleFindWordToReplace(updateInputStage: () => void) {
@@ -33,14 +33,11 @@ export function ReplaceWordProvider({children}: ContextProps) {
     return new Promise<void>(async (resolve) => {
       readText(`Which word would you like to replace?`, {
         onSpeechStart: () => {
-          console.log('find word stop listening');
           stopListening();
-          clearRecognisedSpeech();
         },
         onSpeechEnd: () => {startListening();}
       });
       function onWordToReplace() {
-        console.log('found word');
         cleanup();
         resolve();
       }
@@ -56,7 +53,6 @@ export function ReplaceWordProvider({children}: ContextProps) {
   async function handleReplaceWordWith(updateInputStage: () => void, wordToReplace: string) {
     updateInputStage();
     stopListening();
-    clearRecognisedSpeech();
     
     return new Promise<void>(async (resolve) => {
       readText(`Say a word or a phrase to replace ${wordToReplace} with`, {

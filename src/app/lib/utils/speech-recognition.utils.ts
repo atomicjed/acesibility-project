@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {RecognisedSpeechTypes} from "../enums/recognised-speech-types.enum.ts";
 
 let recognition: any = null;
@@ -13,15 +13,15 @@ if ("webkitSpeechRecognition" in window) {
 
 export default function useSpeechRecognition() {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
-  
   const [recognisedSpeech, setRecognisedSpeech] = useState("");
   const [recognisedInputSpeech, setRecognisedInputSpeech] = useState("");
   const [interimRecognisedSpeech, setInterimRecognisedSpeech] = useState("");
   const [interimRecognisedInputSpeech, setInterimRecognisedInputSpeech] = useState("");
-  
   const [isListening, setIsListening] = useState(false);
   const [speechRecognitionError, setSpeechRecognitionError] = useState<string | null>(null);
   const [listeningFor, setListeningFor] = useState<RecognisedSpeechTypes>(RecognisedSpeechTypes.Default);
+  
+  const ignoreResultsRef = useRef(false);
 
   useEffect(() => {
     initialiseRecognition();
@@ -39,10 +39,13 @@ export default function useSpeechRecognition() {
     recognitionInstance.lang = "en-GB";
 
     recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+      if (ignoreResultsRef.current) {
+        return;
+      }
       const result = event.results[event.results.length - 1][0].transcript;
       setInterimRecognisedSpeech(result);
       setInterimRecognisedInputSpeech(result);
-      
+
       if (event.results[0].isFinal) {
         setRecognisedSpeech(recognisedSpeech + ' ' + result);
         setRecognisedInputSpeech(recognisedInputSpeech + ' ' + result);
@@ -62,6 +65,7 @@ export default function useSpeechRecognition() {
   }
   
   function startListening() {
+    ignoreResultsRef.current = false;
     if (!recognition) {
       console.log("No recognition instance available, initializing...")
       initialiseRecognition();
@@ -72,13 +76,17 @@ export default function useSpeechRecognition() {
   }
   
   function stopListening() {
-    setIsListening(false);
     recognition?.stop();
+    clearRecognisedSpeech();
+    setIsListening(false);
   }
   
   function clearRecognisedSpeech() {
+    ignoreResultsRef.current = true;
     setRecognisedSpeech('');
     setRecognisedInputSpeech('');
+    setInterimRecognisedSpeech('');
+    setInterimRecognisedInputSpeech('');
   }
   
   function updateListeningFor(recognisedSpeechType: RecognisedSpeechTypes) {
@@ -94,7 +102,6 @@ export default function useSpeechRecognition() {
     startListening,
     stopListening,
     speechRecognitionError,
-    clearRecognisedSpeech,
     updateListeningFor,
     listeningFor,
     hasRecognitionSupport: !!recognition

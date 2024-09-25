@@ -8,10 +8,27 @@ export function focusInput(elementId: string) {
 export function fillInputField(elementId: string, value: string) {
   const inputToFill = document.getElementById(elementId);
   if (inputToFill && inputToFill instanceof HTMLInputElement) {
+    if (inputToFill.type === "email") {
+      fillEmailInputField(inputToFill, value);
+      return;
+    }
+    
     inputToFill.value = value;
   } else {
     console.log('Input element with id ', elementId, ' could not be found');
   }
+}
+
+function formatEmail(input: string): string {
+  return input
+    .toLowerCase() 
+    .replace(/\s+/g, '') // Remove all spaces
+    .replace(/at/g, '@') // Replace "at" with "@"
+    .replace(/dot/g, '.'); // Replace "dot" with "."
+}
+
+export function fillEmailInputField(emailInput: HTMLInputElement, value: string) {
+  emailInput.value = formatEmail(value);
 }
 
 export function replaceWordWith(elementId: string, wordToReplace: string, newWord: string) {

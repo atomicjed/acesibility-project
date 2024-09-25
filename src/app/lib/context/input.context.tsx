@@ -16,6 +16,7 @@ type InputContextType = {
   handleRecognisedInputSpeech: (currentScriptObject: ScriptObject) => Promise<SuccessEnum | void>;
   editOptions: InputEditOptions[] | null;
   inputStage: InputStage;
+  updateInputStage: (newInputStage: InputStage) => void;
 }
 
 const InputContext = createContext<InputContextType>({
@@ -27,13 +28,14 @@ const InputContext = createContext<InputContextType>({
   },
   editOptions: null,
   inputStage: InputStage.FillInput,
+  updateInputStage: () => {},
 });
 
 export function InputProvider({ children }: ContextProps) {
   const [editOptions, setEditOptions] = useState<InputEditOptions[] | null>(null);
   const [inputStage, setInputStage] = useState<InputStage>(InputStage.FillInput);
   const { readText } = useSpeech();
-  const { recognisedInputSpeech, interimRecognisedInputSpeech, stopListening, startListening, clearRecognisedSpeech } = useSpeechRecognitionContext();
+  const { recognisedInputSpeech, interimRecognisedInputSpeech, stopListening, startListening } = useSpeechRecognitionContext();
   const { handleFindWordToReplace, handleReplaceWordWith, handleReplaceWord, updateWordToReplace } = useReplaceWord();
   const editOptionsArray: InputEditOptions[] = [
     InputEditOptions.ReplaceWord,
@@ -99,17 +101,18 @@ export function InputProvider({ children }: ContextProps) {
   
   async function handleIsThisCorrect(currentInput: string) {
     setInputStage(InputStage.IsThisCorrect);
-    stopListening();
+    
     return new Promise<void>(async (resolve) => {
       readText(`You inputted ${currentInput}, is this correct?`, {
         onSpeechStart: () => {
-          clearRecognisedSpeech();
+          stopListening();
         },
         onSpeechEnd: () => startListening()
       });
       function onIsCorrect() {
         cleanup();
         setEditOptions(null);
+        window.dispatchEvent(new Event('nextClicked'));
         resolve();
       }
 
@@ -136,7 +139,6 @@ export function InputProvider({ children }: ContextProps) {
         onSpeechStart: () => {
           stopListening();
           setEditOptions(editOptionsArray);
-          clearRecognisedSpeech();
         },
         onSpeechEnd: () => {
           startListening();
@@ -145,7 +147,6 @@ export function InputProvider({ children }: ContextProps) {
       
       function onOptionSelected() {
         cleanup();
-        console.log('option selected');
         resolve();
       }
       function cleanup() {
@@ -155,9 +156,13 @@ export function InputProvider({ children }: ContextProps) {
       window.addEventListener('optionSelected', onOptionSelected);
     })
   }
+  
+  function updateInputStage(newInputStage: InputStage) {
+    setInputStage(newInputStage);
+  }
     
   return (
-    <InputContext.Provider value={{ handleRecognisedInputSpeech, editOptions, inputStage }}>
+    <InputContext.Provider value={{ handleRecognisedInputSpeech, editOptions, inputStage, updateInputStage }}>
       {children}
     </InputContext.Provider>
   )

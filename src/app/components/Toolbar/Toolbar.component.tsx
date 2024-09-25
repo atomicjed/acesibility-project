@@ -39,7 +39,6 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   }, [recognisedSpeech, interimRecognisedSpeech, listeningFor, targetWord, currentScriptObject]);
 
   useEffect(() => {
-    console.log('Recognised input speech:', recognisedInputSpeech);
     async function onRecognisedInputSpeech() {
       if (listeningFor === RecognisedSpeechTypes.UserInput && currentScriptObject) {
         await handleRecognisedInputSpeech(currentScriptObject);

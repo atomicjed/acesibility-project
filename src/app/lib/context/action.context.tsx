@@ -32,7 +32,6 @@ export function ActionProvider({ children }: ContextProps) {
   }
 
   function handleButtonAction(userActionObject: UserActionObject, recognisedSpeech: string, targetWord: string | undefined): ActionResponse | undefined {
-    console.log('is recognised speech dat?');
     if (targetWord && userActionObject.elementId && recognisedSpeech.includes(targetWord)) {
       const button = document.getElementById(userActionObject.elementId);
       if (button) {

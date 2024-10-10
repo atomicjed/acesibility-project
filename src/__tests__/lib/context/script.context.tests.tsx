@@ -46,9 +46,10 @@ const mockScriptArray = [
   { text: "Mock Text Script 4", textId: 4 },
 ];
 
+const readTextMock = jest.fn();
 jest.mock("../../../app/lib/context/accessibility.context.tsx", () => ({
   useSpeech: () => ({
-    readText: jest.fn(),
+    readText: readTextMock,
     highlightFocussedDiv: jest.fn(),
     removeHighlightOnDiv: jest.fn(),
     script: mockScriptArray,
@@ -274,5 +275,5 @@ describe("startScriptAgain", () => {
     });
     
     expect(screen.getByTestId(textId).textContent).toBe("3");
-  })
+  });
 })

@@ -116,7 +116,7 @@ export function ScriptProvider({ children }: ContextProps) {
         highlightFocussedDiv(scriptObject.focussedDiv);
       }
       await readScriptOut(scriptObject);
-      
+
       if (cancelReadScript.current) {
         cancelReadScript.current = false;
         break;
@@ -171,6 +171,7 @@ export function ScriptProvider({ children }: ContextProps) {
       }
 
       function onCancelClick() {
+        cancelReadScript.current = true;
         window.speechSynthesis.cancel();
         stopListening();
         setSpeaking(false);
@@ -208,7 +209,6 @@ export function ScriptProvider({ children }: ContextProps) {
   }
   
   async function jumpToScriptObject(textIdToJumpTo?: number) {
-    cancelReadScript.current = true;
     dispatchCancelEvent();
     
     await new Promise<void>((resolve) => {

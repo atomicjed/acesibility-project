@@ -8,6 +8,8 @@ import {InputProvider} from "./input.context.tsx";
 import {ContextProps} from "../types/context-props.types.ts";
 import {ActionProvider} from "./action.context.tsx";
 import {ReplaceWordProvider} from "./replace-word.context.tsx";
+import {StartAgainProvider} from "./start-again.context.tsx";
+import {getHighlightedDivWrapperId} from "../utils/accessibility-context.utils/highlight-focussed-div.utils.ts";
 
 type SpeechContextType = {
   readText: (text: string, speechState?: SpeechState) => void;
@@ -16,6 +18,7 @@ type SpeechContextType = {
   removeHighlightOnDiv: (divId: string) => void;
   updateHighlightedDivStyling: (styles: React.CSSProperties) => void;
   toggleToolbar: () => void;
+  script: ScriptObject[] | null;
 };
 
 type SpeechState = {
@@ -35,11 +38,12 @@ const SpeechContext = createContext<SpeechContextType>({
   removeHighlightOnDiv: speechContextIsNotInitialised,
   updateHighlightedDivStyling: speechContextIsNotInitialised,
   toggleToolbar: speechContextIsNotInitialised,
+  script: null,
 });
 
 export function AccessibilityProvider({ children }: ContextProps) {
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [pageScript, setPageScript] = useState<ScriptObject[] | null>(null);
+  const [script, setScript] = useState<ScriptObject[] | null>(null);
   const [toolbarIsVisible, setToolbarIsVisible] = useState<boolean>(false);
   const [focussedDivStyles, setFocussedDivStyles] = useState<React.CSSProperties>({
     position: 'relative',
@@ -109,8 +113,14 @@ export function AccessibilityProvider({ children }: ContextProps) {
     window.speechSynthesis.speak(utterance);
   }
   
-  function updatePageScript(script: ScriptObject[]) {
-    setPageScript(script);
+  function updatePageScript(pageScript: ScriptObject[]) {
+    let i = 1;
+    for (const scriptObject of pageScript) {
+      scriptObject.textId = i;
+      i++;
+    }
+    
+    setScript(pageScript);
   }
 
   function highlightFocussedDiv(divId: string) {
@@ -118,6 +128,8 @@ export function AccessibilityProvider({ children }: ContextProps) {
     if (divToHighlight) {
       const wrapper = document.createElement('div');
       Object.assign(wrapper.style, focussedDivStyles);
+      
+      wrapper.id = getHighlightedDivWrapperId(divId);
       
       divToHighlight.parentNode?.insertBefore(wrapper, divToHighlight);
       
@@ -133,7 +145,9 @@ export function AccessibilityProvider({ children }: ContextProps) {
     const divToLoseFocus = document.getElementById(divId);
     if (divToLoseFocus) {
       const highlightedWrapper = divToLoseFocus.parentElement;
-      if (highlightedWrapper && highlightedWrapper !== document.body) {
+      const highlightedWrapperId = getHighlightedDivWrapperId(divId);
+      
+      if (highlightedWrapper && highlightedWrapper.id === highlightedWrapperId) {
         const parentDiv = highlightedWrapper.parentNode;
         if (parentDiv) {
           parentDiv.insertBefore(divToLoseFocus, highlightedWrapper);
@@ -148,18 +162,20 @@ export function AccessibilityProvider({ children }: ContextProps) {
   }
 
   return (
-    <SpeechContext.Provider value={{readText, updatePageScript, highlightFocussedDiv, removeHighlightOnDiv, updateHighlightedDivStyling, toggleToolbar}}>
+    <SpeechContext.Provider value={{ readText, updatePageScript, highlightFocussedDiv, removeHighlightOnDiv, updateHighlightedDivStyling, toggleToolbar, script }}>
       <Navbar toolbarIsVisible={toolbarIsVisible} />
       {children}
       <SpeechRecognitionProvider>
         <ReplaceWordProvider>
-          <InputProvider>
-            <ActionProvider>
-              <ScriptProvider>
-                <Toolbar speaking={window.speechSynthesis.speaking} script={pageScript} visible={toolbarIsVisible} />
-              </ScriptProvider>
-            </ActionProvider>
-          </InputProvider>
+          <StartAgainProvider>
+            <InputProvider>
+              <ActionProvider>
+                <ScriptProvider>
+                  <Toolbar speaking={window.speechSynthesis.speaking} visible={toolbarIsVisible} />
+                </ScriptProvider>
+              </ActionProvider>
+            </InputProvider>
+          </StartAgainProvider>
         </ReplaceWordProvider>
       </SpeechRecognitionProvider>
     </SpeechContext.Provider>

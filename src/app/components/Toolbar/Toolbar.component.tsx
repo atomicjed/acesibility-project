@@ -5,7 +5,6 @@ import "./Toolbar.css";
 import {Button} from "../Button.tsx";
 import {useScript} from "../../lib/context/script.context.tsx";
 import {useSpeechRecognitionContext} from "../../lib/context/speech-recognition.context.tsx";
-import {ScriptObject} from "../../lib/types/script-object.types.ts";
 import {RecognisedSpeechTypes} from "../../lib/enums/recognised-speech-types.enum.ts";
 import {useInput} from "../../lib/context/input.context.tsx";
 import {TargetWordAction} from "./ActionInstructions/TargetWordAction.component.tsx";
@@ -14,23 +13,12 @@ import {UserInputAction} from "./ActionInstructions/UserInputAction/UserInputAct
 export interface ToolbarProps {
   speaking: boolean;
   visible: boolean;
-  script: ScriptObject[] | null;
 }
 
-export default function Toolbar({ visible, script }: ToolbarProps ) {
+export default function Toolbar({ visible }: ToolbarProps ) {
   const { recognisedSpeech, recognisedInputSpeech, interimRecognisedSpeech, interimRecognisedInputSpeech, startListening, stopListening, isListening, listeningFor } = useSpeechRecognitionContext();
-  const { handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking, currentScriptObject } = useScript();
+  const { handleReadScript, handleRecognisedSpeech, dispatchCancelEvent, dispatchNextEvent, goToPreviousScriptObject, startScriptObjectAgain,  targetWord, targetWordDetected, speaking, currentScriptObject } = useScript();
   const { inputStage, handleRecognisedInputSpeech } = useInput();
-
-  useEffect(() => {
-    if (script) {
-      let i = 1;
-      for (const scriptObject of script) {
-        scriptObject.textId = i;
-        i++;
-      }
-    }
-  }, [script]);
 
   useEffect(() => {
     if (currentScriptObject && listeningFor === RecognisedSpeechTypes.TargetWord) {
@@ -41,7 +29,7 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
   useEffect(() => {
     async function onRecognisedInputSpeech() {
       if (listeningFor === RecognisedSpeechTypes.UserInput && currentScriptObject) {
-        await handleRecognisedInputSpeech(currentScriptObject);
+        await handleRecognisedInputSpeech(currentScriptObject, startScriptObjectAgain);
       }
     }
     
@@ -76,24 +64,30 @@ export default function Toolbar({ visible, script }: ToolbarProps ) {
           {speaking ? (
             <div className={'flex items-center justify-center gap-6'}>
               <div className={`${isListening && 'mt-8'} flex flex-col gap-2 items-center`}>
-                <button onClick={handleCancelSpeech}
+                <button onClick={dispatchCancelEvent}
                         className={'p-2 border-black border-solid border rounded-2xl'}>Cancel
                 </button>
                 {isListening && <div
                     className={`${targetWordDetected === 'cancel' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or
                     say "cancel"</div>}
+                <button onClick={goToPreviousScriptObject}
+                        className={'p-2 border-black border-solid border rounded-2xl'}>Previous
+                </button>
+                {isListening && <div
+                    className={`${targetWordDetected === 'previous' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or
+                    say "previous"</div>}
               </div>
 
               {!isListening ? <div>Speaking...</div> : <div>Listening...</div>}
 
               <div className={`${isListening && 'mt-8'} flex flex-col gap-2 items-center`}>
-                <button onClick={handleNextClick} className={'p-2 border-black border-solid border rounded-2xl'}>Next</button>
+                <button onClick={dispatchNextEvent} className={'p-2 border-black border-solid border rounded-2xl'}>Next</button>
                 {isListening && <div className={`${targetWordDetected === 'next' && 'flash-green'} text-sm text-center text-gray-400 font-bold`}>Or say "next"</div>}
               </div>
             </div>
           ) : (
             <div className={'flex items-center justify-center flex-col'}>
-              <Button onClick={() => handleReadScript(script)} className={'p-4 bg-black rounded-2xl text-white'}>Read Script</Button>
+              <Button onClick={() => handleReadScript()} className={'p-4 bg-black rounded-2xl text-white'}>Read Script</Button>
             </div>
           )}
         </div>

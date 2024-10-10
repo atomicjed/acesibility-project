@@ -3,6 +3,7 @@ import {ContextProps} from "../types/context-props.types.ts";
 import {useSpeech} from "./accessibility.context.tsx";
 import {useSpeechRecognitionContext} from "./speech-recognition.context.tsx";
 import {replaceWordWith} from "../utils/input-utlis/input.utils.ts";
+import {CustomEvents} from "../enums/custom-events.enum.ts";
 
 type ReplaceWordContextType = {
   handleFindWordToReplace: (updateInputStage: () => void) => Promise<void>;
@@ -43,10 +44,10 @@ export function ReplaceWordProvider({children}: ContextProps) {
       }
 
       function cleanup() {
-        window.removeEventListener('word-to-replace', onWordToReplace);
+        window.removeEventListener(CustomEvents.WordToReplace, onWordToReplace);
       }
 
-      window.addEventListener('word-to-replace', onWordToReplace);
+      window.addEventListener(CustomEvents.WordToReplace, onWordToReplace);
     });
   }
 
@@ -68,10 +69,10 @@ export function ReplaceWordProvider({children}: ContextProps) {
       }
 
       function cleanup() {
-        window.removeEventListener('replace-word-with', onReplaceWordWith);
+        window.removeEventListener(CustomEvents.ReplaceWordWith, onReplaceWordWith);
       }
 
-      window.addEventListener('replace-word-with', onReplaceWordWith);
+      window.addEventListener(CustomEvents.ReplaceWordWith, onReplaceWordWith);
     });
   }
   

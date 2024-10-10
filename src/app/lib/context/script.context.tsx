@@ -1,4 +1,4 @@
-import {createContext, useContext, useState} from "react";
+import {createContext, useContext, useRef, useState} from "react";
 import {useSpeechRecognitionContext} from "./speech-recognition.context.tsx";
 import {ScriptObject} from "../types/script-object.types.ts";
 import {useAction} from "./action.context.tsx";
@@ -9,12 +9,15 @@ import {ContextProps} from "../types/context-props.types.ts";
 import {useSpeech} from "./accessibility.context.tsx";
 import {useInput} from "./input.context.tsx";
 import {InputStage} from "../enums/InputStage.enum.ts";
+import {CustomEvents} from "../enums/custom-events.enum.ts";
 
 type ReadScriptContextType = {
-  handleReadScript: (scriptArray: ScriptObject[] | null) => Promise<void>;
+  handleReadScript: (textId?: number) => Promise<void>;
+  goToPreviousScriptObject: () => Promise<void>;
+  startScriptObjectAgain: () => Promise<void>;
   handleRecognisedSpeech: (scriptObject: ScriptObject) => void;
-  handleNextClick: () => void;
-  handleCancelSpeech: () => void;
+  dispatchCancelEvent: () => void;
+  dispatchNextEvent: () => void;
   targetWord?: string;
   targetWordDetected: string | null;
   speaking: boolean;
@@ -22,10 +25,12 @@ type ReadScriptContextType = {
 }
 
 const ReadScriptContext = createContext<ReadScriptContextType>({
-  handleReadScript: async () => {return Promise.resolve();},
+  handleReadScript: async () => {},
+  goToPreviousScriptObject: async () => {},
+  startScriptObjectAgain: async () => {},
   handleRecognisedSpeech: () => {},
-  handleNextClick: () => {},
-  handleCancelSpeech: () => {},
+  dispatchCancelEvent: () => {},
+  dispatchNextEvent: () => {},
   targetWord: undefined,
   targetWordDetected: null,
   speaking: false,
@@ -37,10 +42,13 @@ export function ScriptProvider({ children }: ContextProps) {
   const [targetWordDetected, setTargetWordDetected] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState<boolean>(false);
   const [currentScriptObject, setCurrentScriptObject] = useState<ScriptObject | null>(null);
+  const cancelReadScript = useRef(false);
+    
   const { readText, highlightFocussedDiv, removeHighlightOnDiv } = useSpeech();
   const { stopListening, startListening, recognisedSpeech, updateListeningFor } = useSpeechRecognitionContext();
   const { handleSpeechPromptedAction } = useAction();
   const { updateInputStage } = useInput();
+  const { script } = useSpeech();
   
   async function handleRecognisedSpeech(scriptObject: ScriptObject) {
     const formatRecognisedSpeech = recognisedSpeech.trim().toLowerCase();
@@ -48,32 +56,31 @@ export function ScriptProvider({ children }: ContextProps) {
   
     if (response?.isSuccess) {
       onRecognisedSpeechSuccess(response.recognisedWord);
-      handleNextClick();
+      window.dispatchEvent(new Event(CustomEvents.NextClicked));
     }
 
     if (formatRecognisedSpeech.includes('next')) {
       onRecognisedSpeechSuccess('next');
-      handleNextClick();
+      dispatchNextEvent();
     }
 
     if (formatRecognisedSpeech.includes('cancel')) {
       onRecognisedSpeechSuccess('cancel');
-      handleCancelSpeech();
+      dispatchCancelEvent();
+    }
+
+    if (formatRecognisedSpeech.includes('previous')) {
+      onRecognisedSpeechSuccess('previous');
+      await goToPreviousScriptObject();
     }
   }
   
-  function handleNextClick() {
-    const event = new Event('nextClicked');
-    window.dispatchEvent(event);
+  function dispatchCancelEvent() {
+    window.dispatchEvent(new Event(CustomEvents.CancelClicked));
   }
-
-  function handleCancelSpeech() {
-    window.speechSynthesis.cancel();
-    stopListening();
-    setSpeaking(false);
-
-    const event = new Event('cancelClicked');
-    window.dispatchEvent(event);
+  
+  function dispatchNextEvent() {
+    window.dispatchEvent(new Event(CustomEvents.NextClicked));
   }
 
   function onRecognisedSpeechSuccess(targetWord?: string) {
@@ -86,22 +93,38 @@ export function ScriptProvider({ children }: ContextProps) {
     }, 1000);
   }
 
-  async function handleReadScript(scriptArray: ScriptObject[] | null) {
-    if (!scriptArray) {
+  async function handleReadScript(idToJumpTo?: number) {
+    if (!script) {
       console.log('Please set up a script, find out how to do this using our docs here: https://docs.com');
       return;
     }
-
+    
     setSpeaking(true);
-    for (const scriptObject of scriptArray) {
+    for (const scriptObject of script) {
+      if (cancelReadScript.current) {
+        cancelReadScript.current = false;
+        break;
+      }
+      
+      if (idToJumpTo && scriptObject.textId && (scriptObject.textId < idToJumpTo)) {
+        continue;
+      }
+      
       setCurrentScriptObject(scriptObject);
       
       if (scriptObject.focussedDiv) {
         highlightFocussedDiv(scriptObject.focussedDiv);
       }
       await readScriptOut(scriptObject);
+      
+      if (cancelReadScript.current) {
+        cancelReadScript.current = false;
+        break;
+      }
     }
     setSpeaking(false);
+    setCurrentScriptObject(null);
+    window.dispatchEvent(new Event(CustomEvents.ReadScriptFinished));
   }
   
   async function readScriptOut(scriptObject: ScriptObject) {
@@ -148,24 +171,60 @@ export function ScriptProvider({ children }: ContextProps) {
       }
 
       function onCancelClick() {
+        window.speechSynthesis.cancel();
+        stopListening();
+        setSpeaking(false);
+        setCurrentScriptObject(null);
+        
         cleanup();
         if (scriptObject.focussedDiv) {
           removeHighlightOnDiv(scriptObject.focussedDiv);
         }
+        
+        resolve();
       }
 
       function cleanup() {
-        window.removeEventListener('nextClicked', onNextClick);
-        window.removeEventListener('cancelClicked', onCancelClick);
+        window.removeEventListener(CustomEvents.CancelClicked, onNextClick);
+        window.removeEventListener(CustomEvents.NextClicked, onCancelClick);
       }
 
-      window.addEventListener('nextClicked', onNextClick);
-      window.addEventListener('cancelClicked', onCancelClick);
+      window.addEventListener(CustomEvents.NextClicked, onNextClick);
+      window.addEventListener(CustomEvents.CancelClicked, onCancelClick);
     });
+  }
+
+  async function goToPreviousScriptObject() {
+    const scriptObjectToJumpTo = currentScriptObject?.textId ? currentScriptObject.textId - 1 : undefined;
+    if (scriptObjectToJumpTo === undefined) {
+      console.warn("Current script object does not have a valid textId.");
+    }
+    
+    await jumpToScriptObject(scriptObjectToJumpTo);
+  }
+
+  async function startScriptObjectAgain() {
+    await jumpToScriptObject(currentScriptObject?.textId);
+  }
+  
+  async function jumpToScriptObject(textIdToJumpTo?: number) {
+    cancelReadScript.current = true;
+    dispatchCancelEvent();
+    
+    await new Promise<void>((resolve) => {
+      function onReadScriptFinished() {
+        window.removeEventListener(CustomEvents.NextClicked, onReadScriptFinished);
+        resolve();
+      }
+
+    window.addEventListener(CustomEvents.ReadScriptFinished, onReadScriptFinished);
+    });
+    
+    await handleReadScript(textIdToJumpTo);
   }
   
   return (
-    <ReadScriptContext.Provider value={{handleReadScript, handleRecognisedSpeech, handleNextClick, handleCancelSpeech, targetWord, targetWordDetected, speaking, currentScriptObject}}>
+    <ReadScriptContext.Provider value={{handleReadScript, goToPreviousScriptObject, startScriptObjectAgain, handleRecognisedSpeech, dispatchCancelEvent, dispatchNextEvent, targetWord, targetWordDetected, speaking, currentScriptObject}}>
       {children}
     </ReadScriptContext.Provider>
   )

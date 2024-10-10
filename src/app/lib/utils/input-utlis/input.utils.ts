@@ -19,6 +19,15 @@ export function fillInputField(elementId: string, value: string) {
   }
 }
 
+export function clearInputField(elementId: string) {
+  const inputToFill = document.getElementById(elementId);
+  if (inputToFill && inputToFill instanceof HTMLInputElement) {
+    inputToFill.value = "";
+  } else {
+    throw Error(`Input element with id, ${elementId}, could not be found`);
+  }
+}
+
 function formatEmail(input: string): string {
   return input
     .toLowerCase() 

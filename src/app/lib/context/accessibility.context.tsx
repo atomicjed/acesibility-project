@@ -10,6 +10,8 @@ import {ActionProvider} from "./action.context.tsx";
 import {ReplaceWordProvider} from "./replace-word.context.tsx";
 import {StartAgainProvider} from "./start-again.context.tsx";
 import {getHighlightedDivWrapperId} from "../utils/accessibility-context.utils/highlight-focussed-div.utils.ts";
+import {AddToInputProvider} from "./add-to-input.context.tsx";
+import {CapitaliseWordProvider} from "./capitalise-word.context.tsx";
 
 type SpeechContextType = {
   readText: (text: string, speechState?: SpeechState) => void;
@@ -168,13 +170,17 @@ export function AccessibilityProvider({ children }: ContextProps) {
       <SpeechRecognitionProvider>
         <ReplaceWordProvider>
           <StartAgainProvider>
-            <InputProvider>
-              <ActionProvider>
-                <ScriptProvider>
-                  <Toolbar speaking={window.speechSynthesis.speaking} visible={toolbarIsVisible} />
-                </ScriptProvider>
-              </ActionProvider>
-            </InputProvider>
+            <AddToInputProvider>
+              <CapitaliseWordProvider>
+                <InputProvider>
+                  <ActionProvider>
+                    <ScriptProvider>
+                      <Toolbar speaking={window.speechSynthesis.speaking} visible={toolbarIsVisible} />
+                    </ScriptProvider>
+                  </ActionProvider>
+                </InputProvider>
+              </CapitaliseWordProvider>
+            </AddToInputProvider>
           </StartAgainProvider>
         </ReplaceWordProvider>
       </SpeechRecognitionProvider>

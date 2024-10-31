@@ -4,4 +4,7 @@ export enum InputStage {
   InputEditOptions = 'InputEditOptions',
   FindWordToReplace = 'FindWordToReplace',
   ReplaceWordWith = 'ReplaceWordWith',
+  AddToAnswer = 'AddToAnswer',
+  FindWordToCapitalise = 'FindWordToCapitalise',
+  CapitaliseWord = 'CapitaliseWord',
 }

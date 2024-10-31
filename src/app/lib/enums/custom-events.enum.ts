@@ -7,4 +7,7 @@ export enum CustomEvents {
   ReplaceWordWith = 'replaceWordWith',
   OptionSelected = 'optionSelected',
   ReadScriptFinished = 'readScriptFinished',
+  AddToInputCompleted = 'addToInputCompleted',
+  FoundWordToCapitalise = 'foundWordToCapitalise',
+  CapitalisedWord = 'capitalisedWord',
 }

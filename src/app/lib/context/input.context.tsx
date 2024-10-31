@@ -6,13 +6,19 @@ import {InputStage} from "../enums/InputStage.enum.ts";
 import {ScriptObject} from "../types/script-object.types.ts";
 import {handleFillInputAction} from "../utils/input-utlis/recognised-fill-input-speech.ts";
 import {SuccessEnum} from "../enums/success.enum.ts";
-import {handleRecognisedIsThisCorect} from "../utils/input-utlis/is-this-correct.utils.ts";
+import {handleRecognisedIsThisCorrect} from "../utils/input-utlis/is-this-correct.utils.ts";
 import {handleRecognisedInputEditOption} from "../utils/input-utlis/input-edit-options.utils.ts";
-import {findWordToReplace} from "../utils/input-utlis/input.utils.ts";
+import {
+  addToCurrentInputValue,
+  capitaliseInputWord,
+  findNumberOfOccurrencesOfWordInInput
+} from "../utils/input-utlis/input.utils.ts";
 import {useReplaceWord} from "./replace-word.context.tsx";
 import {useSpeech} from "./accessibility.context.tsx";
 import {useStartAgain} from "./start-again.context.tsx";
 import {CustomEvents} from "../enums/custom-events.enum.ts";
+import {useAddToInput} from "./add-to-input.context.tsx";
+import {useCapitaliseWord} from "./capitalise-word.context.tsx";
 
 type InputContextType = {
   handleRecognisedInputSpeech: (currentScriptObject: ScriptObject, startScriptObjectAgain: () => Promise<void>) => Promise<SuccessEnum | void>;
@@ -35,6 +41,9 @@ export function InputProvider({ children }: ContextProps) {
   const { recognisedInputSpeech, interimRecognisedInputSpeech, stopListening, startListening } = useSpeechRecognitionContext();
   const { handleFindWordToReplace, handleReplaceWordWith, handleReplaceWord, updateWordToReplace } = useReplaceWord();
   const { handleStartAgain } = useStartAgain();
+  const { handleAddToInput } = useAddToInput();
+  const { handleFindWordToCapitalise, handleCapitaliseWord } = useCapitaliseWord();
+  
   const editOptionsArray: InputEditOptions[] = [
     InputEditOptions.ReplaceWord,
     InputEditOptions.AddToAnswer,
@@ -56,31 +65,55 @@ export function InputProvider({ children }: ContextProps) {
       handleFillInputAction(currentScriptObject.userAction, formattedInputSpeech);
       await handleIsThisCorrect(formattedInputSpeech);
     }
-    if (inputStage == InputStage.IsThisCorrect) {
-      handleRecognisedIsThisCorect(formattedInterimInputSpeech);
+    if (inputStage === InputStage.IsThisCorrect) {
+      handleRecognisedIsThisCorrect(formattedInterimInputSpeech);
     }
-    if (inputStage == InputStage.InputEditOptions) {
+    if (inputStage === InputStage.InputEditOptions) {
       const option = handleRecognisedInputEditOption(formattedInterimInputSpeech);
       await handleOptionSelected(startScriptObjectAgain, option, currentScriptObject.userAction.elementId);
     }
     
-    if (inputStage == InputStage.FindWordToReplace && currentScriptObject.userAction.elementId) {
-      const doesWordExistInInput = findWordToReplace(currentScriptObject.userAction.elementId, formattedInputSpeech);
-      if (doesWordExistInInput) {
+    if (inputStage === InputStage.FindWordToReplace && currentScriptObject.userAction.elementId) {
+      const wordIsInInput = findNumberOfOccurrencesOfWordInInput(currentScriptObject.userAction.elementId, formattedInputSpeech);
+      if (wordIsInInput > 0) {
         updateWordToReplace(formattedInputSpeech);
         window.dispatchEvent(new Event(CustomEvents.WordToReplace));
         await handleReplaceWordWith(() => setInputStage(InputStage.ReplaceWordWith), formattedInputSpeech);
       }
     }
     
-    if (inputStage == InputStage.ReplaceWordWith && currentScriptObject.userAction.elementId && formattedInputSpeech.length > 0) {
+    if (inputStage === InputStage.ReplaceWordWith && currentScriptObject.userAction.elementId && formattedInputSpeech.length > 0) {
       const newInputValue = handleReplaceWord(currentScriptObject.userAction.elementId, formattedInputSpeech);
       
       if (newInputValue) {
         window.dispatchEvent(new Event(CustomEvents.ReplaceWordWith));
-        setInputStage(InputStage.IsThisCorrect);
         await handleIsThisCorrect(newInputValue);
       }
+    }
+    
+    if (inputStage === InputStage.AddToAnswer && currentScriptObject.userAction.elementId && formattedInputSpeech.length > 0) {
+      const newInputValue = addToCurrentInputValue(currentScriptObject.userAction.elementId, formattedInputSpeech);
+      
+      window.dispatchEvent(new Event(CustomEvents.AddToInputCompleted));
+      await handleIsThisCorrect(newInputValue);
+    }
+    
+    if (inputStage === InputStage.FindWordToCapitalise && currentScriptObject.userAction.elementId && formattedInputSpeech.length > 0) {
+      const numberOfOccurrencesOfWordInInput = findNumberOfOccurrencesOfWordInInput(currentScriptObject.userAction.elementId, formattedInputSpeech);
+      
+      if (numberOfOccurrencesOfWordInInput !== 0) {
+        window.dispatchEvent(new Event(CustomEvents.FoundWordToCapitalise));
+        await handleCapitaliseWord(numberOfOccurrencesOfWordInInput, formattedInputSpeech, () => setInputStage(InputStage.CapitaliseWord));
+      }
+    }
+    
+    if (inputStage === InputStage.CapitaliseWord && currentScriptObject.userAction.elementId && formattedInputSpeech.length > 0) {
+      // output a number based on user input
+      const specifiedNthValue = 1;
+      
+      const newInputValue = capitaliseInputWord(currentScriptObject.userAction.elementId, "ryan", specifiedNthValue);
+      window.dispatchEvent(new Event(CustomEvents.CapitalisedWord));
+      await handleIsThisCorrect(newInputValue);
     }
   }
   
@@ -98,6 +131,13 @@ export function InputProvider({ children }: ContextProps) {
         if (elementId) {
           await handleStartAgain(elementId, () => setInputStage(InputStage.FillInput), startScriptObjectAgain);
         }
+        break;
+      case InputEditOptions.AddToAnswer:
+        await handleAddToInput(() => setInputStage(InputStage.AddToAnswer));
+        break;
+      case InputEditOptions.CapitaliseWord:
+        await handleFindWordToCapitalise(() => setInputStage(InputStage.FindWordToCapitalise));
+        break;
     }
   }
   
@@ -152,10 +192,10 @@ export function InputProvider({ children }: ContextProps) {
         resolve();
       }
       function cleanup() {
-        window.removeEventListener('optionSelected', onOptionSelected);
+        window.removeEventListener(CustomEvents.OptionSelected, onOptionSelected);
       }
 
-      window.addEventListener('optionSelected', onOptionSelected);
+      window.addEventListener(CustomEvents.OptionSelected, onOptionSelected);
     })
   }
   

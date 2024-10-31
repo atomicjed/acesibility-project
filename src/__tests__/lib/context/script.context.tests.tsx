@@ -112,14 +112,14 @@ describe("handleReadScript", () => {
     let textIdElement = screen.getByTestId(textId);
     expect(textIdElement.textContent).toBe("1");
     
-    await act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event(CustomEvents.NextClicked));
     });
     
     textIdElement = screen.getByTestId(textId);
     expect(textIdElement.textContent).toBe("2");
 
-    await act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event(CustomEvents.NextClicked));
     });
 
@@ -141,7 +141,7 @@ describe("handleReadScript", () => {
 
     expect(screen.getByTestId(textId).textContent).toBe("1");
 
-    await act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event(CustomEvents.CancelClicked));
     });
 
@@ -164,7 +164,7 @@ describe("goToPreviousScriptObject", () => {
     });
 
     const previousScriptButton = screen.getByText(previousButtonText);
-    await act(() => {
+    await act(async () => {
       previousScriptButton.click();
     });
 
@@ -205,13 +205,13 @@ describe("goToPreviousScriptObject", () => {
       screen.getByText(readScriptButtonText).click();
     });
 
-    await act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event(CustomEvents.NextClicked));
     });
 
     expect(screen.getByTestId(textId).textContent).toBe("2");
 
-    await act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event(CustomEvents.NextClicked));
     });
 
@@ -239,7 +239,7 @@ describe("startScriptAgain", () => {
       screen.getByText(readScriptButtonText).click();
     });
 
-    await act(() => {
+    await act(async () => {
       screen.getByText(startScriptAgainButtonText).click();
     });
 
@@ -258,19 +258,19 @@ describe("startScriptAgain", () => {
       screen.getByText(readScriptButtonText).click();
     });
 
-    await act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event(CustomEvents.NextClicked));
     });
 
     expect(screen.getByTestId(textId).textContent).toBe("2");
 
-    await act(() => {
+    await act(async () => {
       window.dispatchEvent(new Event(CustomEvents.NextClicked));
     });
 
     expect(screen.getByTestId(textId).textContent).toBe("3");
     
-    await act(() => {
+    await act(async () => {
       screen.getByText(startScriptAgainButtonText).click();
     });
     

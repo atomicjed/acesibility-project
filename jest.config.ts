@@ -1,5 +1,8 @@
 export default {
+  collectCoverage: true,
   preset: 'ts-jest',
+  coverageDirectory: './coverage',
+  coverageReporters: ['json'],
   testEnvironment: 'jest-environment-jsdom',
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {

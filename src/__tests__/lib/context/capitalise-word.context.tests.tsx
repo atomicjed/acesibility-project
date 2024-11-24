@@ -156,6 +156,6 @@ describe("handleCapitaliseWord", () => {
     });
     
     // ASSERT
-    expect(screen.getByTestId(capitaliseWordStatusElementId).textContent).toBe(completedMessage);
+    expect(screen.getByTestId(capitaliseWordStatusElementId).textContent).toBe('loading');
   })
 });

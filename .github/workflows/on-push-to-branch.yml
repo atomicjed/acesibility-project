@@ -28,9 +28,28 @@ jobs:
         run: npm run build 
 
       - name: Run tests
-        run: npm run test 
-
-      - name: Upload Coverage to Codecov
+        run: npm run test
+          
+      - name: Upload coverage to Codecov (demo)
         uses: codecov/codecov-action@v3
         with:
+           files: |
+             ./coverage/calculator/coverage-final.json
+             ./coverage/coverage-test/coverage-final.json
+             ./coverage/coverage-final.json
+           flags: demo,${{ matrix.os }}
+           name: codecov-demo
+           verbose: true
+           token: ${{ secrets.CODECOV_TOKEN }}
+          
+      - name: Upload coverage to Codecov (version)
+        uses: codecov/codecov-action@v3
+        with:
+          files: |
+            ./coverage/calculator/coverage-final.json
+            ./coverage/coverage-test/coverage-final.json
+            ./coverage/coverage-final.json
+          flags: version,${{ matrix.os }}
+          name: codecov-version
+          verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
